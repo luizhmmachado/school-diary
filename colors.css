@@ -1,0 +1,13 @@
+:root {
+  --primary-color: #ffffff;
+  --secondary-color: linear-gradient(
+    180deg,
+    #EDE6FF 0%,
+    #F9F9FB 100%
+  );
+  --red-alert: #fed6ce;
+  --blue-alert: #cdd4fe;
+  --green-alert: #ceffea;
+  --text-color: #333333;
+  --shadow: 4px 8px 12px rgba(51, 51, 51, 0.3);
+}
