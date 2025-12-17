@@ -5,6 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>School Diary - Login</title>
     <link rel="stylesheet" href="style.css">
+    <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 <body>
     <div id="login">
@@ -26,7 +27,21 @@
             
             <button type="button" class="btn-signup">Cadastre-se</button>
             
-            <button type="button" class="btn-google">Login com Google</button>
+              <div class="google-btn-wrapper">
+                 <div id="g_id_onload"
+                     data-client_id="375197639266-bchbffs8chahjdn2amo4j250acd1dght.apps.googleusercontent.com"
+                     data-callback="handleGoogleLogin">
+                 </div>
+                 <div class="g_id_signin"
+                     data-type="standard"
+                     data-size="large"
+                     data-theme="outline"
+                     data-text="signin_with"
+                     data-shape="rectangular"
+                     data-logo_alignment="left"
+                     data-width="100%">
+                 </div>
+              </div>
         </form>
     </div>
     <script src="index.js"></script>
