@@ -12,3 +12,67 @@ function togglePassword() {
     toggleIcon.alt = 'Mostrar senha';
   }
 }
+
+// Configuração da API
+const API_URL = 'http://localhost:3000/api';
+
+// Função chamada quando o usuário faz login com Google
+async function handleGoogleLogin(response) {
+  try {
+    const credential = response.credential;
+    
+    // Enviar o token para o backend para validação
+    const result = await fetch(`${API_URL}/auth/google`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ credential }),
+    });
+    
+    const data = await result.json();
+    
+    if (data.success) {
+      console.log('Login bem-sucedido!', data.user);
+      alert(`Bem-vindo, ${data.user.name}!`);
+      // Aqui você pode redirecionar para a página principal
+      // window.location.href = '/dashboard';
+    } else {
+      alert('Erro ao fazer login: ' + data.message);
+    }
+  } catch (error) {
+    console.error('Erro ao processar login:', error);
+    alert('Erro ao fazer login com Google. Tente novamente.');
+  }
+}
+
+// Login tradicional com email e senha
+document.getElementById('login-form').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  
+  const email = document.getElementById('email').value;
+  const password = document.getElementById('password').value;
+  
+  try {
+    const result = await fetch(`${API_URL}/auth/login`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ email, password }),
+    });
+    
+    const data = await result.json();
+    
+    if (data.success) {
+      console.log('Login bem-sucedido!', data.user);
+      alert(`Bem-vindo, ${data.user.name}!`);
+      // Redirecionar para dashboard
+    } else {
+      alert('Credenciais inválidas!');
+    }
+  } catch (error) {
+    console.error('Erro ao fazer login:', error);
+    alert('Erro ao fazer login. Tente novamente.');
+  }
+});

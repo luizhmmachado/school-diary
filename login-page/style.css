@@ -106,8 +106,13 @@ button:hover {
   color: white;
 }
 
-.btn-google {
-  background-color: white;
-  color: var(--text-color);
-  border: 1px solid #ddd;
+.google-btn-wrapper {
+  width: 100%;
+  display: flex;
+  justify-content: center;
+  margin-top: 10px;
+}
+
+.g_id_signin {
+  width: 100% !important;
 }
