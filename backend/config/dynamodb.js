@@ -1,7 +1,6 @@
 const { DynamoDBClient } = require('@aws-sdk/client-dynamodb');
 const { DynamoDBDocumentClient, PutCommand, GetCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
 
-// Configurar cliente DynamoDB
 const client = new DynamoDBClient({
   region: process.env.AWS_REGION || 'us-east-2',
   credentials: {
@@ -13,7 +12,6 @@ const client = new DynamoDBClient({
 const dynamoDB = DynamoDBDocumentClient.from(client);
 const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME;
 
-// Criar ou atualizar usuário
 async function createOrUpdateUser(userData) {
   const params = {
     TableName: TABLE_NAME,
@@ -23,8 +21,8 @@ async function createOrUpdateUser(userData) {
       name: userData.name,
       picture: userData.picture,
       googleId: userData.googleId,
-      authProvider: userData.authProvider, // 'google' ou 'email'
-      password: userData.password || null, // Apenas para login tradicional
+      authProvider: userData.authProvider,
+      password: userData.password || null,
       createdAt: userData.createdAt || new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     },
@@ -43,7 +41,7 @@ async function createOrUpdateUser(userData) {
 async function getUserByEmail(email) {
   const params = {
     TableName: TABLE_NAME,
-    IndexName: 'email-index', // Precisará criar este índice no DynamoDB
+    IndexName: 'email-index',
     KeyConditionExpression: 'email = :email',
     ExpressionAttributeValues: {
       ':email': email,
@@ -59,11 +57,10 @@ async function getUserByEmail(email) {
   }
 }
 
-// Buscar usuário por Google ID
 async function getUserByGoogleId(googleId) {
   const params = {
     TableName: TABLE_NAME,
-    IndexName: 'googleId-index', // Precisará criar este índice no DynamoDB
+    IndexName: 'googleId-index',
     KeyConditionExpression: 'googleId = :googleId',
     ExpressionAttributeValues: {
       ':googleId': googleId,
@@ -79,7 +76,6 @@ async function getUserByGoogleId(googleId) {
   }
 }
 
-// Buscar usuário por ID
 async function getUserById(userId) {
   const params = {
     TableName: TABLE_NAME,
