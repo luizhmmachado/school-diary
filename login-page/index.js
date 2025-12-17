@@ -13,8 +13,8 @@ function togglePassword() {
   }
 }
 
-// Configuração da API
-const API_URL = 'http://localhost:3000/api';
+// Configuração da API (use HTTPS para evitar mixed content/CORS)
+const API_URL = 'https://school-diary-production.up.railway.app/api';
 
 // Função chamada quando o usuário faz login com Google
 async function handleGoogleLogin(response) {

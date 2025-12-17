@@ -30,10 +30,23 @@ router.post('/google', async (req, res) => {
   try {
     const { credential } = req.body;
 
+    // Audiences permitidas (suporta múltiplos Client IDs via env)
+    const allowedAudiences = [
+      process.env.GOOGLE_CLIENT_ID,
+      process.env.GOOGLE_CLIENT_ID_ALT,
+    ].filter(Boolean);
+
+    if (allowedAudiences.length === 0) {
+      return res.status(500).json({
+        success: false,
+        message: 'Configuração ausente: defina GOOGLE_CLIENT_ID (e opcionalmente GOOGLE_CLIENT_ID_ALT).',
+      });
+    }
+
     // Verificar o token do Google
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
-      audience: process.env.GOOGLE_CLIENT_ID,
+      audience: allowedAudiences,
     });
 
     const payload = ticket.getPayload();
