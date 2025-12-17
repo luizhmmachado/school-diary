@@ -1,0 +1,36 @@
+School Diary
+
+O projeto deve apresentar uma interface simples e funcional, a fim de organizar a vida diária e os estudos do usuário, 
+seja esse um estudante escolar, universitário ou outros (verificar disponibilidade paracustomização do usuário).
+
+Páginas a serem desenvolvidas:
+
+- Página de login
+- Página de utilitários
+- Página inicial (Calendário)
+
+Detalhamento - Página de login
+
+- Deve ser possível cadastrar uma nova conta, fazer login na conta cadastrada, ou fazer login via conta do Google (cadastro
+por baixo dos panos)
+
+Detalhamento - Página de utilitários
+
+- Em caso de uso escolar/universitário
+    -Deve ser possível criar um cronograma com as aulas da semana
+        - Deve ser possível criar um "perfil" para cada aula
+            - Cada perfil de aula deve ter a possibilidade de cadastrar:
+                - Nome da matéria
+                - Horários
+                - Imagem (opcional)
+                - Número de aulas prevista
+                - Número de faltas máxima (ou porcentagem de presença necessária)
+                - Notas (com a nota média, se disponível)
+                - Data de provas e/ou outros eventos
+        - O cronograma deve ser importado para o Calendário (pagina principal)
+
+Detalhamento - Página inicial
+
+- Deve apesentar, em primeiro plano, somente as provas e/ou eventos do dia
+- Ao expandir o dia, deve apresentar as aulas e horários do dia
+    - Deve ser possível cadastrar faltas para uma ou mais aulas do dia
