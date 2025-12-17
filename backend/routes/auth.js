@@ -12,7 +12,6 @@ const {
 const router = express.Router();
 const googleClient = new OAuth2Client(process.env.GOOGLE_CLIENT_ID);
 
-// Função auxiliar para gerar JWT
 function generateToken(user) {
   return jwt.sign(
     {
@@ -25,12 +24,10 @@ function generateToken(user) {
   );
 }
 
-// Login com Google
 router.post('/google', async (req, res) => {
   try {
     const { credential } = req.body;
 
-    // Audiences permitidas (suporta múltiplos Client IDs via env)
     const allowedAudiences = [
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_ID_ALT,
@@ -45,13 +42,6 @@ router.post('/google', async (req, res) => {
       });
     }
 
-    // Opcional: log do aud recebido para depuração
-    try {
-      const rawPayload = JSON.parse(Buffer.from(credential.split('.')[1], 'base64').toString('utf8'));
-      console.log('Google aud (token):', rawPayload.aud, ' | allowed:', allowedAudiences);
-    } catch (_) {}
-
-    // Verificar o token do Google
     const ticket = await googleClient.verifyIdToken({
       idToken: credential,
       audience: allowedAudiences,
@@ -63,11 +53,9 @@ router.post('/google', async (req, res) => {
     const name = payload['name'];
     const picture = payload['picture'];
 
-    // Verificar se o usuário já existe
     let user = await getUserByGoogleId(googleId);
 
     if (!user) {
-      // Se não existir, criar novo usuário
       const userData = {
         userId: uuidv4(),
         email,
@@ -82,7 +70,6 @@ router.post('/google', async (req, res) => {
       user = result.user;
     }
 
-    // Gerar token JWT
     const token = generateToken(user);
 
     res.json({
@@ -104,12 +91,10 @@ router.post('/google', async (req, res) => {
   }
 });
 
-// Login tradicional com email e senha
 router.post('/login', async (req, res) => {
   try {
     const { email, password } = req.body;
 
-    // Buscar usuário
     const user = await getUserByEmail(email);
 
     if (!user || user.authProvider !== 'email') {
@@ -119,7 +104,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Verificar senha
     const passwordMatch = await bcrypt.compare(password, user.password);
 
     if (!passwordMatch) {
@@ -129,7 +113,6 @@ router.post('/login', async (req, res) => {
       });
     }
 
-    // Gerar token JWT
     const token = generateToken(user);
 
     res.json({
@@ -150,12 +133,10 @@ router.post('/login', async (req, res) => {
   }
 });
 
-// Registro tradicional com email e senha
 router.post('/register', async (req, res) => {
   try {
     const { email, password, name } = req.body;
 
-    // Verificar se o usuário já existe
     const existingUser = await getUserByEmail(email);
 
     if (existingUser) {
@@ -165,10 +146,8 @@ router.post('/register', async (req, res) => {
       });
     }
 
-    // Hash da senha
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    // Criar novo usuário
     const userData = {
       userId: uuidv4(),
       email,
@@ -180,7 +159,6 @@ router.post('/register', async (req, res) => {
 
     const result = await createOrUpdateUser(userData);
 
-    // Gerar token JWT
     const token = generateToken(result.user);
 
     res.json({
