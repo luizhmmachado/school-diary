@@ -34,7 +34,9 @@ router.post('/google', async (req, res) => {
     const allowedAudiences = [
       process.env.GOOGLE_CLIENT_ID,
       process.env.GOOGLE_CLIENT_ID_ALT,
-    ].filter(Boolean);
+    ]
+      .filter(Boolean)
+      .map((s) => s.trim());
 
     if (allowedAudiences.length === 0) {
       return res.status(500).json({
@@ -42,6 +44,12 @@ router.post('/google', async (req, res) => {
         message: 'Configuração ausente: defina GOOGLE_CLIENT_ID (e opcionalmente GOOGLE_CLIENT_ID_ALT).',
       });
     }
+
+    // Opcional: log do aud recebido para depuração
+    try {
+      const rawPayload = JSON.parse(Buffer.from(credential.split('.')[1], 'base64').toString('utf8'));
+      console.log('Google aud (token):', rawPayload.aud, ' | allowed:', allowedAudiences);
+    } catch (_) {}
 
     // Verificar o token do Google
     const ticket = await googleClient.verifyIdToken({
