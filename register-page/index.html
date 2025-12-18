@@ -4,15 +4,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>School Diary - Login</title>
+    <title>School Diary - Cadastro</title>
     <link rel="stylesheet" href="style.css">
     <script src="https://accounts.google.com/gsi/client" async defer></script>
 </head>
 
 <body>
-    <div id="login">
-        <form id="login-form">
-            <h2>Login</h2>
+    <div id="register">
+        <form id="register-form">
+            <h2>Cadastro</h2>
+
+            <div class="input-group">
+                <input type="text" id="name" name="name" placeholder="Nome completo" required>
+            </div>
 
             <div class="input-group">
                 <input type="email" id="email" name="email" placeholder="Email" required>
@@ -25,9 +29,7 @@
                 </button>
             </div>
 
-            <button type="submit" class="btn-login">Login</button>
-
-            <button type="button" class="btn-signup">Cadastre-se</button>
+            <button type="submit" class="btn-signup">Cadastre-se</button>
 
             <h4>Ou</h4>
 

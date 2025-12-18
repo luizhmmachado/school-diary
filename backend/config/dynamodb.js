@@ -10,7 +10,7 @@ const client = new DynamoDBClient({
 });
 
 const dynamoDB = DynamoDBDocumentClient.from(client);
-const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME;
+const TABLE_NAME = process.env.DYNAMODB_TABLE_NAME || 'school-diary-users';
 
 async function createOrUpdateUser(userData) {
   const params = {
@@ -37,7 +37,6 @@ async function createOrUpdateUser(userData) {
   }
 }
 
-// Buscar usuário por email
 async function getUserByEmail(email) {
   const params = {
     TableName: TABLE_NAME,
