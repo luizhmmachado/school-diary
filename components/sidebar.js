@@ -17,6 +17,10 @@ class AppSidebar extends HTMLElement {
             <img src="/images/calendar.svg" alt="Calendário" class="nav-icon">
             <span class="nav-label">Calendário</span>
           </a>
+          <a href="#" class="nav-item" data-tab="classes">
+            <img src="/images/book.svg" alt="Aulas" class="nav-icon">
+            <span class="nav-label">Aulas</span>
+          </a>
         </nav>
       </aside>
     `;
