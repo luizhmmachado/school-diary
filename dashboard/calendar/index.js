@@ -59,6 +59,12 @@
         </div>
         <div class="day-body" aria-label="sem eventos"></div>
       `;
+      card.addEventListener('click', () => {
+        state.selected = stripTime(day);
+        renderMonth();
+        renderWeek();
+        renderEvents();
+      });
       weekContainer.appendChild(card);
     }
   }
