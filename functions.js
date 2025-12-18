@@ -1,4 +1,5 @@
 const API_URL = 'https://school-diary-production.up.railway.app/api';
+const SIDEBAR_STATE_KEY = 'sidebarCollapsed';
 
 // Variáveis CSS
 function cssVar(name, fallback = '') {
@@ -14,8 +15,41 @@ function initSidebar() {
   const layout = document.querySelector('.layout');
   const toggle = document.querySelector('[data-role="sidebar-toggle"]');
   if (!layout || !toggle) return;
+
+  layout.style.transition = 'none';
+
+  const saved = localStorage.getItem(SIDEBAR_STATE_KEY);
+  const isCollapsed = saved === 'true';
+  if (isCollapsed) {
+    layout.classList.add('collapsed');
+  } else {
+    layout.classList.remove('collapsed');
+  }
+
+  requestAnimationFrame(() => {
+    layout.style.transition = '';
+  });
+
   toggle.addEventListener('click', () => {
     layout.classList.toggle('collapsed');
+    const nowCollapsed = layout.classList.contains('collapsed');
+    localStorage.setItem(SIDEBAR_STATE_KEY, String(nowCollapsed));
+  });
+}
+
+function initNavigation() {
+  const navItems = document.querySelectorAll('.nav-item');
+  navItems.forEach(item => {
+    item.addEventListener('click', (e) => {
+      const tab = item.dataset.tab;
+      if (tab === 'calendar') {
+        e.preventDefault();
+        window.location.href = '/dashboard/calendar/';
+      }else if (tab === 'dashboard') {
+        e.preventDefault();
+        window.location.href = '/dashboard/';
+      }
+    });
   });
 }
 
@@ -60,4 +94,5 @@ async function handleGoogleLogin(response) {
 
 document.addEventListener('DOMContentLoaded', () => {
   initSidebar();
+  initNavigation();
 });
