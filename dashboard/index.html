@@ -8,23 +8,12 @@
 </head>
 <body>
     <div class="layout">
-        <aside id="sidebar" class="sidebar">
-            <button class="sidebar-toggle" data-role="sidebar-toggle" aria-label="Abrir/fechar menu">
-                <img src="../images/menu.svg" alt="Menu" class="toggle-icon">
-                <span class="toggle-label">Menu</span>
-            </button>
-
-            <nav class="sidebar-nav">
-                <a href="#" class="nav-item" data-tab="calendar">
-                    <img src="../images/calendar.svg" alt="Calendário" class="nav-icon">
-                    <span class="nav-label">Calendário</span>
-                </a>
-            </nav>
-        </aside>
+        <app-sidebar></app-sidebar>
 
         <main class="content">
         </main>
     </div>
+    <script src="../components/sidebar.js"></script>
     <script src="../functions.js"></script>
 </body>
 </html>
