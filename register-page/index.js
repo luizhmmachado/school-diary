@@ -1,7 +1,3 @@
-const API_URL = 'https://school-diary-production.up.railway.app/api';
-
-window.handleGoogleLogin = handleGoogleLogin;
-
 const form = document.getElementById('register-form');
 
 form.addEventListener('submit', async (e) => {
