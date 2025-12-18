@@ -1,31 +1,5 @@
 const API_URL = 'https://school-diary-production.up.railway.app/api';
 
-async function handleGoogleLogin(response) {
-  try {
-    const credential = response.credential;
-
-    const result = await fetch(`${API_URL}/auth/google`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ credential }),
-    });
-
-    const data = await result.json();
-
-    if (data.success) {
-      alert('Login com Google realizado com sucesso!');
-      // Redirecionar para a dashboard/página inicial
-      // window.location.href = '/';
-    } else {
-      alert('Erro ao fazer login: ' + (data.message || 'Tente novamente.'));
-    }
-  } catch (error) {
-    alert('Erro ao fazer login com Google. Tente novamente.');
-  }
-}
-
 window.handleGoogleLogin = handleGoogleLogin;
 
 const form = document.getElementById('register-form');

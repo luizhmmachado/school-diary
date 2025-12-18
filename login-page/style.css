@@ -1,118 +1,124 @@
 @import "../colors.css";
 
 body {
-  background-color: var(--primary-color);
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  min-height: 100vh;
-  margin: 0;
+    background-color: var(--primary-color);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    margin: 0;
+}
+
+h4 {
+    display: flex;
+    justify-content: center;
+    align-items: center;
 }
 
 #login {
-  width: 30%;
-  height: 50vh;
-  background: var(--secondary-color);
-  box-shadow: var(--shadow);
-  border-radius: 8px;
-  padding: 40px;
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
+    width: 30%;
+    height: 50vh;
+    background: var(--secondary-color);
+    box-shadow: var(--shadow);
+    border-radius: 8px;
+    padding: 40px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
 }
 
 #login-form {
-  display: flex;
-  flex-direction: column;
-  gap: 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
 }
 
 #login-form h2 {
-  color: var(--text-color);
-  text-align: center;
-  margin: 0 0 20px 0;
+    color: var(--text-color);
+    text-align: center;
+    margin: 0 0 20px 0;
 }
 
 .input-group {
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
 }
 
 .password-group {
-  position: relative;
+    position: relative;
 }
 
 .input-group input {
-  padding: 12px;
-  border: 1px solid #ddd;
-  border-radius: 4px;
-  font-size: 14px;
+    padding: 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
 }
 
 .password-group input {
-  padding-right: 45px;
+    padding-right: 45px;
 }
 
 .toggle-password {
-  position: absolute;
-  right: 5px;
-  top: 50%;
-  transform: translateY(-50%);
-  background: transparent;
-  border: none;
-  padding: 8px;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  justify-content: center;
+    position: absolute;
+    right: 5px;
+    top: 50%;
+    transform: translateY(-50%);
+    background: transparent;
+    border: none;
+    padding: 8px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
 }
 
 .toggle-password img {
-  width: 20px;
-  height: 20px;
+    width: 20px;
+    height: 20px;
 }
 
 .toggle-password:hover {
-  opacity: 0.7;
+    opacity: 0.7;
 }
 
 .input-group input:focus {
-  outline: none;
-  border-color: #9370DB;
+    outline: none;
+    border-color: #9370DB;
 }
 
 button {
-  padding: 12px;
-  border: none;
-  border-radius: 4px;
-  font-size: 14px;
-  font-weight: 600;
-  cursor: pointer;
-  transition: opacity 0.2s;
+    padding: 12px;
+    border: none;
+    border-radius: 4px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
 }
 
 button:hover {
-  opacity: 0.9;
+    opacity: 0.9;
 }
 
 .btn-login {
-  background-color: #9370DB;
-  color: white;
+    background-color: #9370DB;
+    color: white;
 }
 
 .btn-signup {
-  background-color: #6a5acd;
-  color: white;
+    background-color: #6a5acd;
+    color: white;
 }
 
 .google-btn-wrapper {
-  width: 100%;
-  display: flex;
-  justify-content: center;
-  margin-top: 10px;
+    width: 100%;
+    display: flex;
+    justify-content: center;
+    margin-top: 10px;
 }
 
 .g_id_signin {
-  width: 100% !important;
+    width: 100% !important;
 }
