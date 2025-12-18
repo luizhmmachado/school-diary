@@ -48,6 +48,9 @@ function initNavigation() {
       }else if (tab === 'dashboard') {
         e.preventDefault();
         window.location.href = '/dashboard/';
+      }else if (tab === 'classes') {
+        e.preventDefault();
+        window.location.href = '/dashboard/classes/';
       }
     });
   });

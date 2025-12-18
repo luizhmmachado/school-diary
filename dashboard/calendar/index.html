@@ -7,56 +7,53 @@
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <div class="layout">
-        <app-sidebar></app-sidebar>
+    <app-layout>
+        <section class="page">
+            <header class="page-header">
+                <h1 class="page-title">Calendário</h1>
+            </header>
 
-        <main class="content">
-            <section class="page">
-                <header class="page-header">
-                    <h1 class="page-title">Calendário</h1>
-                </header>
-
-                <div class="page-grid">
-                    <section class="panel" aria-label="Month day-by-day" id="week-view">
-                        <div class="panel-header">
-                            <div class="month-strip">
-                                <button class="nav-round" data-action="months-prev" aria-label="Meses anteriores">
-                                    <img src="../../images/left.svg" alt="Anterior">
-                                </button>
-                                <div class="month-pills" id="month-pills" role="tablist" aria-label="Escolher mês"></div>
-                                <button class="nav-round" data-action="months-next" aria-label="Próximos meses">
-                                    <img src="../../images/right.svg" alt="Próximo">
-                                </button>
-                            </div>
+            <div class="page-grid">
+                <section class="panel" aria-label="Month day-by-day" id="week-view">
+                    <div class="panel-header">
+                        <div class="month-strip">
+                            <button class="nav-round" data-action="months-prev" aria-label="Meses anteriores">
+                                <img src="../../images/left.svg" alt="Anterior">
+                            </button>
+                            <div class="month-pills" id="month-pills" role="tablist" aria-label="Escolher mês"></div>
+                            <button class="nav-round" data-action="months-next" aria-label="Próximos meses">
+                                <img src="../../images/right.svg" alt="Próximo">
+                            </button>
                         </div>
-                        <div id="week-days" class="week-days" role="list"></div>
+                    </div>
+                    <div id="week-days" class="week-days" role="list"></div>
+                </section>
+
+                <aside class="panel side" aria-label="Month calendar">
+                    <div class="panel-header">
+                        <div class="month-nav">
+                            <button class="nav-round" data-action="prev-month" aria-label="Mês anterior">
+                                <img src="../../images/left.svg" alt="Anterior">
+                            </button>
+                            <h2 id="month-label">Mês</h2>
+                            <button class="nav-round" data-action="next-month" aria-label="Próximo mês">
+                                <img src="../../images/right.svg" alt="Próximo">
+                            </button>
+                        </div>
+                    </div>
+                    <div class="calendar-month" id="month-calendar" aria-label="Calendário mensal"></div>
+
+                    <section class="events-future" aria-label="Eventos futuros">
+                        <header class="events-header">
+                            <h3>Eventos futuros</h3>
+                        </header>
+                        <div class="events-body" aria-label="Lista de eventos"></div>
                     </section>
-
-                    <aside class="panel side" aria-label="Month calendar">
-                        <div class="panel-header">
-                            <div class="month-nav">
-                                <button class="nav-round" data-action="prev-month" aria-label="Mês anterior">
-                                    <img src="../../images/left.svg" alt="Anterior">
-                                </button>
-                                <h2 id="month-label">Mês</h2>
-                                <button class="nav-round" data-action="next-month" aria-label="Próximo mês">
-                                    <img src="../../images/right.svg" alt="Próximo">
-                                </button>
-                            </div>
-                        </div>
-                        <div class="calendar-month" id="month-calendar" aria-label="Calendário mensal"></div>
-
-                        <section class="events-future" aria-label="Eventos futuros">
-                            <header class="events-header">
-                                <h3>Eventos futuros</h3>
-                            </header>
-                            <div class="events-body" aria-label="Lista de eventos"></div>
-                        </section>
-                    </aside>
-                </div>
-            </section>
-        </main>
-    </div>
+                </aside>
+            </div>
+        </section>
+    </app-layout>
+    <script src="../../components/layout.js"></script>
     <script src="../../components/sidebar.js"></script>
     <script src="../../functions.js"></script>
     <script src="index.js"></script>
