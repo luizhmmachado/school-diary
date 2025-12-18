@@ -15,9 +15,11 @@ h4 {
     align-items: center;
 }
 
-#login {
+#register {
     width: 30%;
-    height: 50vh;
+    min-height: 50vh;
+    max-height: 90vh;
+    overflow-y: auto;
     background: var(--secondary-color);
     box-shadow: var(--shadow);
     border-radius: 8px;
@@ -27,13 +29,13 @@ h4 {
     justify-content: center;
 }
 
-#login-form {
+#register-form {
     display: flex;
     flex-direction: column;
     gap: 20px;
 }
 
-#login-form h2 {
+#register-form h2 {
     color: var(--text-color);
     text-align: center;
     margin: 0 0 20px 0;
