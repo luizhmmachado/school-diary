@@ -16,15 +16,7 @@ const reqItems = {
   length: document.querySelector('.req-item[data-req="length"]'),
 };
 
-// Variáveis CSS
-function cssVar(name, fallback = '') {
-  const v = getComputedStyle(document.documentElement).getPropertyValue(name);
-  return (v && v.trim()) || fallback;
-}
 
-const COLOR_WEAK = cssVar('--red-alert', '#e53935');
-const COLOR_MEDIUM = cssVar('--blue-alert', '#f9a825');
-const COLOR_STRONG = cssVar('--green-alert', '#43a047');
 
 function evaluatePassword(value) {
   return {
