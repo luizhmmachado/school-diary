@@ -17,7 +17,9 @@ h4 {
 
 #login {
     width: 30%;
-    height: 50vh;
+    min-height: 50vh;
+    max-height: 90vh;
+    overflow-y: auto;
     background: var(--secondary-color);
     box-shadow: var(--shadow);
     border-radius: 8px;

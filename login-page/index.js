@@ -16,6 +16,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const data = await result.json();
     
     if (data.success) {
+      console.log("Login concluído com sucesso")
       // Redirecionar para dashboard
     } else {
       alert('Credenciais inválidas!');
