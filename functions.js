@@ -10,6 +10,15 @@ const COLOR_WEAK = cssVar('--red-alert', '#e53935');
 const COLOR_MEDIUM = cssVar('--blue-alert', '#f9a825');
 const COLOR_STRONG = cssVar('--green-alert', '#43a047');
 
+function initSidebar() {
+  const layout = document.querySelector('.layout');
+  const toggle = document.querySelector('[data-role="sidebar-toggle"]');
+  if (!layout || !toggle) return;
+  toggle.addEventListener('click', () => {
+    layout.classList.toggle('collapsed');
+  });
+}
+
 function togglePassword() {
   const passwordInput = document.getElementById('password');
   const toggleIcon = document.getElementById('toggle-icon');
@@ -48,3 +57,7 @@ async function handleGoogleLogin(response) {
     alert('Erro ao fazer login com Google. Tente novamente.');
   }
 }
+
+document.addEventListener('DOMContentLoaded', () => {
+  initSidebar();
+});
