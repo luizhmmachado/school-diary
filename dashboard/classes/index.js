@@ -809,7 +809,7 @@
       <h3>Confirmar exclusão</h3>
       <div class="modal-body">
         <p>Tem certeza que deseja remover a aula <strong>${cls.name || 'Sem título'}</strong>?</p>
-        <p class="hint">Esta ação não pode ser desfeita.</p>
+        <p class="hint">Essa ação não pode ser desfeita.</p>
       </div>
       <div class="modal-actions">
         <button type="button" class="btn ghost" data-action="cancel">Cancelar</button>
@@ -841,6 +841,15 @@
   }
 
   async function deleteClass(classId) {
+    try {
+      const events = await apiEvents('', { method: 'GET' });
+      const classEvents = events.filter(e => e.classId === classId);
+      for (const event of classEvents) {
+        await apiEvents(`/${event.eventId}`, { method: 'DELETE' });
+      }
+    } catch (err) {
+      console.error('Erro ao deletar eventos da aula', err);
+    }
     return api(`/${classId}`, {
       method: 'DELETE',
     });
