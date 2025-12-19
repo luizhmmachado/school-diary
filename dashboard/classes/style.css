@@ -509,6 +509,10 @@
 	background: var(--green-alert);
 }
 
+.event-card.event-yellow-alert {
+	background: var(--yellow-alert);
+}
+
 .event-header {
 	display: flex;
 	align-items: center;
