@@ -181,7 +181,7 @@
       grid.appendChild(card);
     });
 
-    const addBtn = document.createElement('button');
+    const addTile = document.createElement('button');
     addTile.className = 'add-class-button';
     addTile.innerHTML = `
       <img src="../../images/plus.svg" alt="Adicionar" />
@@ -272,6 +272,9 @@
     state.weekdaySlots = new Map();
     state.startDate = '';
     state.endDate = '';
+    if (!cls) {
+      state.draftEvents = [];
+    }
     if (cls?.scheduleByDay && Array.isArray(cls.scheduleByDay) && cls.scheduleByDay.length) {
       const sorted = [...cls.scheduleByDay].sort((a, b) => a.date.localeCompare(b.date));
       state.startDate = sorted[0].date;
@@ -321,15 +324,11 @@
               </div>
               <div class="field">
                 <label>Data de início</label>
-                <input name="startDate" type="text" readonly placeholder="Selecionar" data-action="pick-start" value="${cls?.scheduleByDay?.[0]?.date || ''}">
+                <input name="startDate" type="date" value="${cls?.scheduleByDay?.[0]?.date || ''}">
               </div>
               <div class="field">
                 <label>Data de término</label>
-                <input name="endDate" type="text" readonly placeholder="Selecionar" data-action="pick-end" value="${cls?.scheduleByDay?.slice(-1)?.[0]?.date || ''}">
-              </div>
-              <div class="field">
-                <label>Imagem (URL)</label>
-                <input name="imageUrl" value="${cls?.imageUrl || ''}">
+                <input name="endDate" type="date" value="${cls?.scheduleByDay?.slice(-1)?.[0]?.date || ''}">
               </div>
               <div class="field">
                 <label>Nº de aulas previstas</label>
@@ -356,8 +355,8 @@
                 <label>Eventos / provas</label>
                 <div class="events-list" data-role="events-list"></div>
                 <p class="hint">Cadastre eventos no botão abaixo.</p>
-                <button type="button" class="btn" data-action="add-event" ${cls ? '' : 'disabled'}>Adicionar evento</button>
-                ${cls ? '' : '<p class="hint">Salve a aula antes de adicionar eventos.</p'}
+                <button type="button" class="btn" data-action="add-event">Adicionar evento</button>
+                ${cls ? '' : '<p class="hint">Os eventos serão vinculados quando a aula for criada.</p>'}
               </div>
             </div>
             <div class="modal-actions">
@@ -379,14 +378,18 @@
     const cancel = modal.querySelector('[data-action="cancel"]');
     const summaryEl = modal.querySelector('[data-role="day-summary"]');
     const pillsEl = modal.querySelector('[data-role="weekday-pills"]');
-    const startInput = modal.querySelector('[data-action="pick-start"]');
-    const endInput = modal.querySelector('[data-action="pick-end"]');
+    const startInput = modal.querySelector('input[name="startDate"]');
+    const endInput = modal.querySelector('input[name="endDate"]');
     const addEventBtn = modal.querySelector('[data-action="add-event"]');
     const presenceModeSelect = modal.querySelector('[data-role="presence-mode"]');
     const eventsListEl = modal.querySelector('[data-role="events-list"]');
 
-    if (cls && eventsListEl) {
-      loadClassEvents(cls.classId, eventsListEl);
+    if (eventsListEl) {
+      if (cls) {
+        loadClassEvents(cls.classId, eventsListEl);
+      } else {
+        renderDraftEvents(eventsListEl);
+      }
     }
     const maxAbsField = modal.querySelector('[data-role="maxAbsences-field"]');
     const minPresField = modal.querySelector('[data-role="minPresence-field"]');
@@ -406,10 +409,12 @@
 
     renderWeekdayPills(pillsEl, summaryEl);
     renderDaySummary(summaryEl);
-    startInput.addEventListener('click', () => openDatePicker(startInput, 'start'));
-    endInput.addEventListener('click', () => openDatePicker(endInput, 'end'));
-    if (addEventBtn && cls) {
-      addEventBtn.addEventListener('click', () => openEventModal(cls));
+    startInput.addEventListener('change', (e) => { state.startDate = e.target.value; renderDaySummary(summaryEl); });
+    endInput.addEventListener('change', (e) => { state.endDate = e.target.value; renderDaySummary(summaryEl); });
+    if (addEventBtn) {
+      addEventBtn.addEventListener('click', () => {
+        if (cls) openEventModal(cls); else openDraftEventModal();
+      });
     }
     cancel.addEventListener('click', closeModal);
     form.addEventListener('submit', async (e) => {
@@ -419,17 +424,30 @@
         alert('Selecione datas de início e término');
         return;
       }
+      const dStart = isoToLocalDate(state.startDate);
+      const dEnd = isoToLocalDate(state.endDate);
+      if (isNaN(dStart) || isNaN(dEnd)) {
+        alert('Datas inválidas. Selecione novamente.');
+        return;
+      }
+      if (dEnd < dStart) {
+        alert('A data de término deve ser posterior à data de início');
+        return;
+      }
       if (!state.weekdays.size) {
         alert('Selecione pelo menos um dia da semana');
         return;
       }
       const scheduleByDay = buildScheduleRange();
+      if (!Array.isArray(scheduleByDay) || scheduleByDay.length === 0) {
+        alert('Nenhum dia do período coincide com os dias selecionados. Ajuste as datas e os dias da semana.');
+        return;
+      }
       const mode = formData.get('presenceMode');
       const payload = {
         name: formData.get('name'),
           days: Array.from(state.weekdays).sort((a,b)=>a-b).map(i => WEEKDAYS[i]),
           scheduleByDay,
-        imageUrl: formData.get('imageUrl') || '',
         totalClasses: formData.get('totalClasses'),
         maxAbsences: mode === 'maxAbsences' ? formData.get('maxAbsences') : null,
         minPresence: mode === 'minPresence' ? formData.get('minPresence') : null,
@@ -441,7 +459,13 @@
         if (cls) {
           await updateClass(cls.classId, payload);
         } else {
-          await createClass(payload);
+          const created = await createClass(payload);
+          if (Array.isArray(state.draftEvents) && state.draftEvents.length) {
+            for (const ev of state.draftEvents) {
+              const body = { ...ev, classId: created.classId };
+              await apiEvents('', { method: 'POST', body: JSON.stringify(body) });
+            }
+          }
         }
         closeModal();
         await loadClasses();
@@ -449,6 +473,133 @@
         console.error('Erro ao salvar aula', err);
         alert('Erro ao salvar aula');
       }
+    });
+  }
+
+  function renderDraftEvents(container) {
+    const list = Array.isArray(state.draftEvents) ? [...state.draftEvents] : [];
+    list.sort((a, b) => {
+      const da = a.date ? new Date(a.date) : new Date('2099-12-31');
+      const db = b.date ? new Date(b.date) : new Date('2099-12-31');
+      return da - db;
+    });
+    if (!list.length) {
+      container.innerHTML = '<p class="hint">Nenhum evento cadastrado</p>';
+      return;
+    }
+    container.innerHTML = '';
+    list.forEach((event, idx) => {
+      const wrap = document.createElement('div');
+      wrap.className = 'event-card';
+      const color = event.color || 'red-alert';
+      wrap.classList.add(`event-${color}`);
+      const dateStr = event.date ? new Date(event.date).toLocaleDateString('pt-BR') : '';
+      const timeStr = event.time || '';
+      wrap.innerHTML = `
+        <div class="event-header">
+          <div class="event-name">${event.name}</div>
+          <button type="button" class="btn-delete-event" data-idx="${idx}" title="Remover evento">×</button>
+        </div>
+        <div class="event-meta">
+          ${dateStr ? `<div class="event-date"><img src="../../images/calendar.svg" alt="data" class="event-icon"> ${dateStr}</div>` : ''}
+          ${timeStr ? `<div class="event-time"><img src="../../images/clock.svg" alt="horário" class="event-icon"> ${timeStr}</div>` : ''}
+        </div>
+      `;
+      const del = wrap.querySelector('.btn-delete-event');
+      del.addEventListener('click', () => {
+        if (!Array.isArray(state.draftEvents)) return;
+        state.draftEvents.splice(idx, 1);
+        renderDraftEvents(container);
+      });
+      container.appendChild(wrap);
+    });
+  }
+
+  function openDraftEventModal() {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    const modal = document.createElement('div');
+    modal.className = 'modal event-modal';
+    modal.innerHTML = `
+      <h3>Novo evento</h3>
+      <div class="modal-body">
+        <form id="event-form">
+          <div class="form-grid">
+            <div class="field">
+              <label>Nome *</label>
+              <input name="name" required>
+            </div>
+            <div class="field">
+              <label>Peso da nota</label>
+              <input name="weight" type="number" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label>Nota obtida</label>
+              <input name="grade" type="number" step="0.01" min="0">
+            </div>
+            <div class="field">
+              <label>Data</label>
+              <input name="date" type="date" required>
+            </div>
+            <div class="field">
+              <label>Horário</label>
+              <input name="time" type="time">
+            </div>
+            <div class="field">
+              <label>Cor do evento</label>
+              <div class="color-picker">
+                <button type="button" class="color-option" data-color="red-alert" style="background: var(--red-alert);" title="Vermelho" data-action="pick-color"></button>
+                <button type="button" class="color-option" data-color="blue-alert" style="background: var(--blue-alert);" title="Azul" data-action="pick-color"></button>
+                <button type="button" class="color-option" data-color="green-alert" style="background: var(--green-alert);" title="Verde" data-action="pick-color"></button>
+              </div>
+            </div>
+            <input name="color" type="hidden" value="red-alert">
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn ghost" data-action="cancel">Cancelar</button>
+            <button type="submit" class="btn primary">Adicionar</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
+    const form = modal.querySelector('#event-form');
+    const cancel = modal.querySelector('[data-action="cancel"]');
+    const colorInput = modal.querySelector('input[name="color"]');
+    const colorOptions = modal.querySelectorAll('[data-action="pick-color"]');
+
+    colorOptions.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const color = e.currentTarget.dataset.color;
+        colorInput.value = color;
+        colorOptions.forEach(b => b.style.border = '');
+        e.currentTarget.style.border = '2px solid #111';
+      });
+    });
+    if (colorOptions[0]) colorOptions[0].style.border = '2px solid #111';
+
+    cancel.addEventListener('click', () => backdrop.remove());
+    form.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      const draft = {
+        name: fd.get('name'),
+        weight: fd.get('weight'),
+        grade: fd.get('grade'),
+        date: fd.get('date'),
+        time: fd.get('time'),
+        color: fd.get('color') || 'red-alert',
+      };
+      if (!Array.isArray(state.draftEvents)) state.draftEvents = [];
+      state.draftEvents.push(draft);
+      backdrop.remove();
+      const hostList = document.querySelector('[data-role="events-list"]');
+      if (hostList) renderDraftEvents(hostList);
     });
   }
 
@@ -553,88 +704,6 @@
     });
   }
 
-  function openDatePicker(targetInput, which) {
-    const backdrop = document.createElement('div');
-    backdrop.className = 'modal-backdrop';
-    const modal = document.createElement('div');
-    modal.className = 'modal day-picker-modal';
-
-    const now = new Date();
-    let cursor = new Date(now.getFullYear(), now.getMonth(), 1);
-
-    function renderCalendar() {
-      modal.innerHTML = '';
-      const header = document.createElement('div');
-      header.className = 'day-picker-header';
-      const prev = document.createElement('button');
-      prev.className = 'btn ghost';
-      prev.textContent = '<';
-      const next = document.createElement('button');
-      next.className = 'btn ghost';
-      next.textContent = '>';
-      const title = document.createElement('div');
-      title.textContent = cursor.toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' });
-      header.append(prev, title, next);
-
-      const grid = document.createElement('div');
-      grid.className = 'calendar-grid';
-      const headers = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
-      headers.forEach(h => {
-        const el = document.createElement('div');
-        el.className = 'weekday';
-        el.textContent = h;
-        grid.appendChild(el);
-      });
-
-      const y = cursor.getFullYear();
-      const m = cursor.getMonth();
-      const first = new Date(y, m, 1);
-      const last = new Date(y, m + 1, 0);
-      const offset = first.getDay();
-      for (let i = 0; i < offset; i++) {
-        const empty = document.createElement('div');
-        empty.className = 'empty';
-        grid.appendChild(empty);
-      }
-      for (let d = 1; d <= last.getDate(); d++) {
-        const date = new Date(y, m, d);
-        const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
-        const btn = document.createElement('button');
-        btn.className = 'day-btn';
-        btn.textContent = String(d);
-        btn.addEventListener('click', () => {
-          if (which === 'start') state.startDate = iso; else state.endDate = iso;
-          targetInput.value = iso;
-          backdrop.remove();
-        });
-        grid.appendChild(btn);
-      }
-
-      const actions = document.createElement('div');
-      actions.className = 'modal-actions';
-      const cancel = document.createElement('button');
-      cancel.className = 'btn ghost';
-      cancel.textContent = 'Cancelar';
-      actions.append(cancel);
-
-      modal.append(header, grid, actions);
-
-      prev.addEventListener('click', () => {
-        cursor = new Date(cursor.getFullYear(), cursor.getMonth() - 1, 1);
-        renderCalendar();
-      });
-      next.addEventListener('click', () => {
-        cursor = new Date(cursor.getFullYear(), cursor.getMonth() + 1, 1);
-        renderCalendar();
-      });
-      cancel.addEventListener('click', () => backdrop.remove());
-    }
-
-    backdrop.appendChild(modal);
-    document.body.appendChild(backdrop);
-    renderCalendar();
-  }
-
   function buildScheduleRange() {
     const start = isoToLocalDate(state.startDate);
     const end = isoToLocalDate(state.endDate);
@@ -699,7 +768,10 @@
 
   async function loadClasses() {
     const data = await api('', { method: 'GET' });
-    state.classes = data;
+    const sorted = Array.isArray(data)
+      ? [...data].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR', { sensitivity: 'base' }))
+      : [];
+    state.classes = sorted;
     render();
   }
 

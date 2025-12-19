@@ -23,7 +23,6 @@ function normalizeClassInput(payload = {}) {
             : (s.start || s.end ? [{ start: s.start || '', end: s.end || '' }] : []),
         }))
       : [],
-    imageUrl: payload.imageUrl || '',
     totalClasses: Number(payload.totalClasses) || 0,
     maxAbsences: payload.maxAbsences !== undefined ? Number(payload.maxAbsences) : null,
     minPresence: payload.minPresence !== undefined ? Number(payload.minPresence) : null,
@@ -65,7 +64,6 @@ async function updateClass(userId, classId, payload) {
     days: data.days,
     schedule: data.schedule,
     scheduleByDay: data.scheduleByDay,
-    imageUrl: data.imageUrl,
     totalClasses: data.totalClasses,
     maxAbsences: data.maxAbsences,
     minPresence: data.minPresence,
@@ -75,7 +73,7 @@ async function updateClass(userId, classId, payload) {
     updatedAt: now(),
   };
 
-  const setParts = ['#name = :name', 'days = :days', 'schedule = :schedule', 'scheduleByDay = :scheduleByDay', 'imageUrl = :imageUrl', 'totalClasses = :totalClasses', 'maxAbsences = :maxAbsences', 'minPresence = :minPresence', 'averageGrade = :averageGrade', 'events = :events', 'absences = :absences', 'updatedAt = :updatedAt'];
+  const setParts = ['#name = :name', 'days = :days', 'schedule = :schedule', 'scheduleByDay = :scheduleByDay', 'totalClasses = :totalClasses', 'maxAbsences = :maxAbsences', 'minPresence = :minPresence', 'averageGrade = :averageGrade', 'events = :events', 'absences = :absences', 'updatedAt = :updatedAt'];
 
   const params = {
     TableName: TABLE,
@@ -87,7 +85,6 @@ async function updateClass(userId, classId, payload) {
       ':days': data.days,
       ':schedule': data.schedule,
       ':scheduleByDay': data.scheduleByDay,
-      ':imageUrl': data.imageUrl,
       ':totalClasses': data.totalClasses,
       ':maxAbsences': data.maxAbsences,
       ':minPresence': data.minPresence,
