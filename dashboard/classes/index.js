@@ -239,7 +239,14 @@
         eventEl.innerHTML = `
           <div class="event-header">
             <div class="event-name">${event.name}</div>
-            <button type="button" class="btn-delete-event" data-event-id="${event.eventId}" title="Remover evento">×</button>
+            <div class="event-actions">
+              <button type="button" class="btn-edit-event" data-event-id="${event.eventId}" title="Editar evento">
+                <img src="../../images/edit.svg" alt="Editar" />
+              </button>
+              <button type="button" class="btn-delete-event" data-event-id="${event.eventId}" title="Remover evento">
+                <img src="../../images/trash.svg" alt="Remover" />
+              </button>
+            </div>
           </div>
           <div class="event-meta">
             ${dateStr ? `<div class="event-date"><img src="../../images/calendar.svg" alt="data" class="event-icon"> ${dateStr}</div>` : ''}
@@ -247,12 +254,18 @@
           </div>
         `;
         
+        const editBtn = eventEl.querySelector('.btn-edit-event');
+        editBtn.addEventListener('click', () => {
+          openEditClassEventModal(event, classId, container);
+        });
+        
         const deleteBtn = eventEl.querySelector('.btn-delete-event');
         deleteBtn.addEventListener('click', async () => {
           if (confirm(`Deseja remover o evento "${event.name}"?`)) {
             try {
               await apiEvents(`/${event.eventId}`, { method: 'DELETE' });
               loadClassEvents(classId, container);
+              try { await computeClassAverages(); } catch {}
             } catch (err) {
               console.error('Erro ao deletar evento', err);
               alert('Erro ao deletar evento');
@@ -592,10 +605,34 @@
     form.addEventListener('submit', (e) => {
       e.preventDefault();
       const fd = new FormData(form);
+      
+      // Formatar peso e nota como decimal
+      let weightValue = fd.get('weight');
+      if (weightValue && weightValue.trim() !== '') {
+        weightValue = weightValue.replace(',', '.');
+        const weightNumber = parseFloat(weightValue);
+        if (!isNaN(weightNumber)) {
+          weightValue = weightNumber.toFixed(1);
+        }
+      } else {
+        weightValue = null;
+      }
+      
+      let gradeValue = fd.get('grade');
+      if (gradeValue && gradeValue.trim() !== '') {
+        gradeValue = gradeValue.replace(',', '.');
+        const gradeNumber = parseFloat(gradeValue);
+        if (!isNaN(gradeNumber)) {
+          gradeValue = gradeNumber.toFixed(1);
+        }
+      } else {
+        gradeValue = null;
+      }
+      
       const draft = {
         name: fd.get('name'),
-        weight: fd.get('weight'),
-        grade: fd.get('grade'),
+        weight: weightValue,
+        grade: gradeValue,
         date: fd.get('date'),
         time: fd.get('time'),
         color: fd.get('color') || 'red-alert',
@@ -771,13 +808,43 @@
     return res.json();
   }
 
+  async function computeClassAverages() {
+    // Busca todos os eventos e calcula média ponderada por aula
+    const events = await apiEvents('', { method: 'GET' });
+    const byClass = new Map();
+    for (const ev of Array.isArray(events) ? events : []) {
+      const gradeRaw = ev?.grade;
+      const weightRaw = ev?.weight;
+      const grade = gradeRaw !== null && gradeRaw !== undefined ? parseFloat(String(gradeRaw).replace(',', '.')) : NaN;
+      const weight = weightRaw !== null && weightRaw !== undefined ? parseFloat(String(weightRaw).replace(',', '.')) : NaN;
+      if (!isNaN(grade) && !isNaN(weight) && weight > 0) {
+        const acc = byClass.get(ev.classId) || { sum: 0, wsum: 0 };
+        acc.sum += grade * weight;
+        acc.wsum += weight;
+        byClass.set(ev.classId, acc);
+      }
+    }
+    // Atualiza state.classes com averageGrade formatada com 1 decimal
+    state.classes = (state.classes || []).map((cls) => {
+      const acc = byClass.get(cls.classId);
+      const avg = acc && acc.wsum > 0 ? (acc.sum / acc.wsum) : null;
+      const averageGrade = avg !== null ? avg.toFixed(1) : '-';
+      return { ...cls, averageGrade };
+    });
+    render();
+  }
+
   async function loadClasses() {
     const data = await api('', { method: 'GET' });
     const sorted = Array.isArray(data)
       ? [...data].sort((a, b) => String(a.name || '').localeCompare(String(b.name || ''), 'pt-BR', { sensitivity: 'base' }))
       : [];
     state.classes = sorted;
-    render();
+    try {
+      await computeClassAverages();
+    } catch (e) {
+      render();
+    }
   }
 
   async function createClass(payload) {
@@ -933,11 +1000,35 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(form);
+      
+      // Formatar peso e nota como decimal
+      let weightValue = fd.get('weight');
+      if (weightValue && weightValue.trim() !== '') {
+        weightValue = weightValue.replace(',', '.');
+        const weightNumber = parseFloat(weightValue);
+        if (!isNaN(weightNumber)) {
+          weightValue = weightNumber.toFixed(1);
+        }
+      } else {
+        weightValue = null;
+      }
+      
+      let gradeValue = fd.get('grade');
+      if (gradeValue && gradeValue.trim() !== '') {
+        gradeValue = gradeValue.replace(',', '.');
+        const gradeNumber = parseFloat(gradeValue);
+        if (!isNaN(gradeNumber)) {
+          gradeValue = gradeNumber.toFixed(1);
+        }
+      } else {
+        gradeValue = null;
+      }
+      
       const payload = {
         classId: cls.classId,
         name: fd.get('name'),
-        weight: fd.get('weight'),
-        grade: fd.get('grade'),
+        weight: weightValue,
+        grade: gradeValue,
         date: fd.get('date'),
         time: fd.get('time'),
         color: fd.get('color'),
@@ -949,9 +1040,138 @@
         if (eventsListEl) {
           await loadClassEvents(cls.classId, eventsListEl);
         }
+        try { await computeClassAverages(); } catch {}
       } catch (err) {
         console.error('Erro ao criar evento', err);
         alert('Erro ao criar evento');
+      }
+    });
+  }
+
+  function openEditClassEventModal(event, classId, eventsContainer) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    const modal = document.createElement('div');
+    modal.className = 'modal event-modal';
+    
+    const gradeDisplay = event.grade ? parseFloat(event.grade).toFixed(1) : '';
+    const weightDisplay = event.weight ? parseFloat(event.weight).toFixed(1) : '';
+    
+    modal.innerHTML = `
+      <h3>Editar evento</h3>
+      <div class="modal-body">
+        <form id="event-form">
+          <div class="form-grid">
+            <div class="field">
+              <label>Nome *</label>
+              <input name="name" required value="${event.name || ''}">
+            </div>
+            <div class="field">
+              <label>Peso da nota</label>
+              <input name="weight" type="number" step="0.01" min="0" value="${weightDisplay}">
+            </div>
+            <div class="field">
+              <label>Nota obtida</label>
+              <input name="grade" type="number" step="0.01" min="0" value="${gradeDisplay}">
+            </div>
+            <div class="field">
+              <label>Data</label>
+              <input name="date" type="date" required value="${event.date || ''}">
+            </div>
+            <div class="field">
+              <label>Horário</label>
+              <input name="time" type="time" value="${event.time || ''}">
+            </div>
+            <div class="field">
+              <label>Cor do evento</label>
+              <div class="color-picker">
+                <button type="button" class="color-option" data-color="red-alert" style="background: var(--red-alert);" title="Vermelho" data-action="pick-color"></button>
+                <button type="button" class="color-option" data-color="blue-alert" style="background: var(--blue-alert);" title="Azul" data-action="pick-color"></button>
+                <button type="button" class="color-option" data-color="green-alert" style="background: var(--green-alert);" title="Verde" data-action="pick-color"></button>
+                <button type="button" class="color-option" data-color="yellow-alert" style="background: var(--yellow-alert);" title="Amarelo" data-action="pick-color"></button>
+              </div>
+            </div>
+            <input name="color" type="hidden" value="${event.color || 'red-alert'}">
+          </div>
+          <div class="modal-actions">
+            <button type="button" class="btn ghost" data-action="cancel">Cancelar</button>
+            <button type="submit" class="btn primary">Salvar evento</button>
+          </div>
+        </form>
+      </div>
+    `;
+
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+
+    backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
+    
+    const form = modal.querySelector('#event-form');
+    const cancel = modal.querySelector('[data-action="cancel"]');
+    const colorInput = modal.querySelector('input[name="color"]');
+    const colorOptions = modal.querySelectorAll('[data-action="pick-color"]');
+
+    // Set selected color button
+    const currentColor = event.color || 'red-alert';
+    colorOptions.forEach(btn => {
+      if (btn.dataset.color === currentColor) {
+        btn.style.border = '2px solid #111';
+      }
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const color = e.currentTarget.dataset.color;
+        colorInput.value = color;
+        colorOptions.forEach(b => b.style.border = '');
+        e.currentTarget.style.border = '2px solid #111';
+      });
+    });
+
+    cancel.addEventListener('click', () => backdrop.remove());
+    
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fd = new FormData(form);
+      
+      // Formatar peso e nota como decimal
+      let weightValue = fd.get('weight');
+      if (weightValue && weightValue.trim() !== '') {
+        weightValue = weightValue.replace(',', '.');
+        const weightNumber = parseFloat(weightValue);
+        if (!isNaN(weightNumber)) {
+          weightValue = weightNumber.toFixed(1);
+        }
+      } else {
+        weightValue = null;
+      }
+      
+      let gradeValue = fd.get('grade');
+      if (gradeValue && gradeValue.trim() !== '') {
+        gradeValue = gradeValue.replace(',', '.');
+        const gradeNumber = parseFloat(gradeValue);
+        if (!isNaN(gradeNumber)) {
+          gradeValue = gradeNumber.toFixed(1);
+        }
+      } else {
+        gradeValue = null;
+      }
+      
+      const payload = {
+        name: fd.get('name'),
+        weight: weightValue,
+        grade: gradeValue,
+        date: fd.get('date'),
+        time: fd.get('time'),
+        color: fd.get('color') || 'red-alert',
+      };
+      
+      try {
+        await apiEvents(`/${event.eventId}`, { method: 'PUT', body: JSON.stringify(payload) });
+        backdrop.remove();
+        loadClassEvents(classId, eventsContainer);
+        try { await computeClassAverages(); } catch {}
+      } catch (err) {
+        console.error('Erro ao editar evento', err);
+        alert('Erro ao editar evento');
       }
     });
   }
