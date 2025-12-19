@@ -1,6 +1,5 @@
 class AppLayout extends HTMLElement {
   connectedCallback() {
-    // Wrap any existing content in layout structure
     const content = this.innerHTML;
     
     this.innerHTML = `

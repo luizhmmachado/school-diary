@@ -12,7 +12,7 @@
     today,
     selected: today,
     monthCursor: new Date(today.getFullYear(), today.getMonth(), 1),
-    monthStripIndex: today.getMonth() < 6 ? 0 : 1, // 0: Jan-Jun, 1: Jul-Dec
+    monthStripIndex: today.getMonth() < 6 ? 0 : 1,
   };
 
   function stripTime(d) {
@@ -26,8 +26,7 @@
   }
 
   function startOfWeek(d) {
-    // Sunday as first day of week
-    const day = d.getDay(); // 0 (Sun) .. 6 (Sat)
+    const day = d.getDay();
     const start = new Date(d);
     start.setDate(d.getDate() - day);
     return stripTime(start);
@@ -40,7 +39,6 @@
   }
 
   function renderWeek() {
-    // Render all days for the selected month (scrollable list)
     weekContainer.innerHTML = '';
     const y = state.monthCursor.getFullYear();
     const m = state.monthCursor.getMonth();
@@ -75,7 +73,7 @@
 
     const first = new Date(y, m, 1);
     const last = new Date(y, m + 1, 0);
-    const offset = first.getDay(); // 0 for Sunday start
+    const offset = first.getDay();
     for (let i = 0; i < offset; i++) frags.push('<div class="day-cell is-out"></div>');
 
     for (let d = 1; d <= last.getDate(); d++) {
@@ -115,7 +113,7 @@
     const y = state.monthCursor.getFullYear();
     const active = state.monthCursor.getMonth();
     const start = state.monthStripIndex === 0 ? 0 : 6;
-    const end = start + 6; // non-inclusive
+    const end = start + 6;
     const frags = [];
     for (let i = start; i < end; i++) {
       const lab = capFirst(new Date(y, i, 1).toLocaleString(locale, { month: 'long' }));
@@ -146,7 +144,6 @@
     const safe = (el, fn) => el && el.addEventListener('click', fn);
     safe(byAction('prev-month'), () => { state.monthCursor.setMonth(state.monthCursor.getMonth() - 1); state.monthStripIndex = state.monthCursor.getMonth() < 6 ? 0 : 1; renderMonth(); renderMonthPills(); });
     safe(byAction('next-month'), () => { state.monthCursor.setMonth(state.monthCursor.getMonth() + 1); state.monthStripIndex = state.monthCursor.getMonth() < 6 ? 0 : 1; renderMonth(); renderMonthPills(); });
-    // Toggle month pills half-year view
     safe(byAction('months-prev'), () => { state.monthStripIndex = 0; renderMonthPills(); });
     safe(byAction('months-next'), () => { state.monthStripIndex = 1; renderMonthPills(); });
 

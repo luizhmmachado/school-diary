@@ -21,7 +21,7 @@
     classes: [],
     editing: null,
     weekdays: new Set(),
-    weekdaySlots: new Map(), // Map<weekdayIndex, Array<{start,end}>>
+    weekdaySlots: new Map(),
     startDate: '',
     endDate: '',
   };
@@ -115,7 +115,6 @@
       const days = (cls.days || []).join(', ');
       const presence = presencePercent(cls);
 
-      // Compute start/end dates from scheduleByDay (ISO dates)
       let startDate = '';
       let endDate = '';
       if (Array.isArray(cls.scheduleByDay) && cls.scheduleByDay.length) {
@@ -123,10 +122,9 @@
         endDate = cls.scheduleByDay.reduce((acc, s) => (!acc || s.date > acc ? s.date : acc), '');
       }
 
-      // Group time ranges by weekday and render lines per day
       let timesHtml = '-';
       if (Array.isArray(cls.scheduleByDay) && cls.scheduleByDay.length) {
-        const grouped = new Map(); // Map<weekdayIndex, Array<string>>
+        const grouped = new Map();
         cls.scheduleByDay.forEach((s) => {
           const d = isoToLocalDate(s.date);
           if (isNaN(d)) return;
@@ -139,7 +137,7 @@
             const range = `${a || '--:--'}-${b || '--:--'}`;
             if (!grouped.has(dow)) grouped.set(dow, []);
             const arr = grouped.get(dow);
-            if (!arr.includes(range)) arr.push(range); // dedupe per weekday
+            if (!arr.includes(range)) arr.push(range);
           });
         });
         const order = [0,1,2,3,4,5,6];
@@ -183,8 +181,7 @@
       grid.appendChild(card);
     });
 
-    // Add tile: shows after existing cards and follows the grid placement rules
-    const addTile = document.createElement('button');
+    const addBtn = document.createElement('button');
     addTile.className = 'add-class-button';
     addTile.innerHTML = `
       <img src="../../images/plus.svg" alt="Adicionar" />
@@ -214,7 +211,6 @@
       const events = await apiEvents('', { method: 'GET' });
       let classEvents = events.filter(e => e.classId === classId);
       
-      // Ordenar por data (mais recente primeiro)
       classEvents.sort((a, b) => {
         const dateA = a.date ? new Date(a.date) : new Date('2099-12-31');
         const dateB = b.date ? new Date(b.date) : new Date('2099-12-31');
@@ -280,7 +276,7 @@
       const sorted = [...cls.scheduleByDay].sort((a, b) => a.date.localeCompare(b.date));
       state.startDate = sorted[0].date;
       state.endDate = sorted[sorted.length - 1].date;
-      const tmp = new Map(); // Map<dow, Array<{start,end}>>
+      const tmp = new Map();
       sorted.forEach(s => {
         const d = isoToLocalDate(s.date);
         const dow = d.getDay();
@@ -389,7 +385,6 @@
     const presenceModeSelect = modal.querySelector('[data-role="presence-mode"]');
     const eventsListEl = modal.querySelector('[data-role="events-list"]');
 
-    // Load and render events for this class
     if (cls && eventsListEl) {
       loadClassEvents(cls.classId, eventsListEl);
     }
@@ -492,7 +487,6 @@
       container.appendChild(btn);
     });
 
-    // Time inputs per selected weekday
     const slotsWrap = document.createElement('div');
     slotsWrap.className = 'weekday-slots';
     const entries = Array.from(state.weekdays).sort((a, b) => a - b);

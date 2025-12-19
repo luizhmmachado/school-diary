@@ -86,7 +86,7 @@ async function handleGoogleLogin(response) {
     const data = await result.json();
     
     if (data.success) {
-      // window.location.href = '/dashboard';
+      window.location.href = '/dashboard/index.html';
     } else {
       alert('Erro ao fazer login: ' + data.message);
     }
