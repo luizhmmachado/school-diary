@@ -17,7 +17,7 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     
     if (data.success) {
       console.log("Login concluído com sucesso")
-      // Redirecionar para dashboard
+      window.location.href = '../dashboard/index.html';
     } else {
       alert('Credenciais inválidas!');
     }

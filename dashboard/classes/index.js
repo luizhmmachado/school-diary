@@ -21,7 +21,7 @@
     classes: [],
     editing: null,
     weekdays: new Set(),
-    weekdaySlots: new Map(), // Map<weekdayIndex, Array<{start,end}>>
+    weekdaySlots: new Map(),
     startDate: '',
     endDate: '',
   };
@@ -115,7 +115,6 @@
       const days = (cls.days || []).join(', ');
       const presence = presencePercent(cls);
 
-      // Compute start/end dates from scheduleByDay (ISO dates)
       let startDate = '';
       let endDate = '';
       if (Array.isArray(cls.scheduleByDay) && cls.scheduleByDay.length) {
@@ -123,10 +122,9 @@
         endDate = cls.scheduleByDay.reduce((acc, s) => (!acc || s.date > acc ? s.date : acc), '');
       }
 
-      // Group time ranges by weekday and render lines per day
       let timesHtml = '-';
       if (Array.isArray(cls.scheduleByDay) && cls.scheduleByDay.length) {
-        const grouped = new Map(); // Map<weekdayIndex, Array<string>>
+        const grouped = new Map();
         cls.scheduleByDay.forEach((s) => {
           const d = isoToLocalDate(s.date);
           if (isNaN(d)) return;
@@ -139,7 +137,7 @@
             const range = `${a || '--:--'}-${b || '--:--'}`;
             if (!grouped.has(dow)) grouped.set(dow, []);
             const arr = grouped.get(dow);
-            if (!arr.includes(range)) arr.push(range); // dedupe per weekday
+            if (!arr.includes(range)) arr.push(range);
           });
         });
         const order = [0,1,2,3,4,5,6];
@@ -183,8 +181,7 @@
       grid.appendChild(card);
     });
 
-    // Add tile: shows after existing cards and follows the grid placement rules
-    const addTile = document.createElement('button');
+    const addBtn = document.createElement('button');
     addTile.className = 'add-class-button';
     addTile.innerHTML = `
       <img src="../../images/plus.svg" alt="Adicionar" />
@@ -214,11 +211,10 @@
       const events = await apiEvents('', { method: 'GET' });
       let classEvents = events.filter(e => e.classId === classId);
       
-      // Ordenar por data (mais recente primeiro)
       classEvents.sort((a, b) => {
-        const dateA = a.date ? new Date(a.date) : new Date('1900-01-01');
-        const dateB = b.date ? new Date(b.date) : new Date('1900-01-01');
-        return dateB - dateA;
+        const dateA = a.date ? new Date(a.date) : new Date('2099-12-31');
+        const dateB = b.date ? new Date(b.date) : new Date('2099-12-31');
+        return dateA - dateB;
       });
       
       if (classEvents.length === 0) {
@@ -234,8 +230,6 @@
         const color = event.color || 'red-alert';
         const colorClass = `event-${color}`;
         eventEl.classList.add(colorClass);
-        
-        console.log('Evento:', event.name, 'Cor salva:', event.color, 'Classe CSS:', colorClass);
         
         const dateStr = event.date ? new Date(event.date).toLocaleDateString('pt-BR') : '';
         const timeStr = event.time || '';
@@ -282,7 +276,7 @@
       const sorted = [...cls.scheduleByDay].sort((a, b) => a.date.localeCompare(b.date));
       state.startDate = sorted[0].date;
       state.endDate = sorted[sorted.length - 1].date;
-      const tmp = new Map(); // Map<dow, Array<{start,end}>>
+      const tmp = new Map();
       sorted.forEach(s => {
         const d = isoToLocalDate(s.date);
         const dow = d.getDay();
@@ -391,7 +385,6 @@
     const presenceModeSelect = modal.querySelector('[data-role="presence-mode"]');
     const eventsListEl = modal.querySelector('[data-role="events-list"]');
 
-    // Load and render events for this class
     if (cls && eventsListEl) {
       loadClassEvents(cls.classId, eventsListEl);
     }
@@ -494,7 +487,6 @@
       container.appendChild(btn);
     });
 
-    // Time inputs per selected weekday
     const slotsWrap = document.createElement('div');
     slotsWrap.className = 'weekday-slots';
     const entries = Array.from(state.weekdays).sort((a, b) => a - b);
@@ -699,6 +691,9 @@
       } catch (e) {}
       throw new Error(errorMsg);
     }
+    if (res.status === 204) {
+      return null;
+    }
     return res.json();
   }
 
@@ -860,18 +855,13 @@
         time: fd.get('time'),
         color: fd.get('color'),
       };
-      console.log('FormData completo:', {
-        name: fd.get('name'),
-        weight: fd.get('weight'),
-        grade: fd.get('grade'),
-        date: fd.get('date'),
-        time: fd.get('time'),
-        color: fd.get('color'),
-      });
-      console.log('Payload enviado:', payload);
       try {
         await apiEvents('', { method: 'POST', body: JSON.stringify(payload) });
         backdrop.remove();
+        const eventsListEl = document.querySelector('[data-role="events-list"]');
+        if (eventsListEl) {
+          await loadClassEvents(cls.classId, eventsListEl);
+        }
       } catch (err) {
         console.error('Erro ao criar evento', err);
         alert('Erro ao criar evento');

@@ -2,7 +2,6 @@
 @import "../../components/layout.css";
 @import "../../components/sidebar.css";
 
-/* Override content for calendar page (no scroll on page, only grid) */
 .content {
     background: transparent;
     padding: 16px 16px 16px 0;
