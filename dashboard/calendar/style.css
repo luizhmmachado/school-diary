@@ -34,6 +34,12 @@
     font-size: 22px;
 }
 
+.page-subtitle {
+    margin: 0;
+    font-size: 14px;
+    color: #444444;
+}
+
 .page-grid {
     display: grid;
     grid-template-columns: 1fr auto;
@@ -93,6 +99,12 @@
 .month-nav #month-label {
     margin: 0 2px;
     font-size: 16px;
+    min-width: 120px;
+    text-align: center;
+}
+
+.month-nav.show-year #month-label {
+    min-width: 170px;
 }
 
 .nav-round {

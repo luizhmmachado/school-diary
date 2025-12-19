@@ -16,6 +16,14 @@ document.getElementById('login-form').addEventListener('submit', async (e) => {
     const data = await result.json();
     
     if (data.success) {
+      if (window.SessionManager) {
+        window.SessionManager.setSession({
+          token: data.token || data.accessToken,
+          userId: data.userId || data.user?.id || data.user?.userId,
+          user: data.user,
+          email,
+        });
+      }
       console.log("Login concluído com sucesso")
       window.location.href = '../dashboard/index.html';
     } else {
