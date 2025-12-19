@@ -16,8 +16,8 @@ function normalizeClassInput(payload = {}) {
     scheduleByDay: Array.isArray(payload.scheduleByDay)
       ? payload.scheduleByDay.map(s => ({
           date: s.date,
-          start: s.start ?? (s.slots && s.slots[0]?.start) || '',
-          end: s.end ?? (s.slots && s.slots[0]?.end) || '',
+          start: s.start ?? ((s.slots && s.slots[0]?.start) || ''),
+          end: s.end ?? ((s.slots && s.slots[0]?.end) || ''),
           slots: Array.isArray(s.slots)
             ? s.slots.map(slot => ({ start: slot.start || '', end: slot.end || '' }))
             : (s.start || s.end ? [{ start: s.start || '', end: s.end || '' }] : []),
