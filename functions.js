@@ -1,4 +1,20 @@
-const API_URL = 'https://school-diary-production.up.railway.app/api';
+function detectApiUrl() {
+  try {
+    const w = typeof window !== 'undefined' ? window : {};
+    const fromWindow = w.API_URL || (w.ENV && w.ENV.API_URL);
+    const fromMeta = (typeof document !== 'undefined')
+      ? (document.querySelector('meta[name="api-url"]')?.content || null)
+      : null;
+    const fromStorage = (typeof localStorage !== 'undefined')
+      ? (localStorage.getItem('sd-api-url') || null)
+      : null;
+    return fromWindow || fromMeta || fromStorage || 'https://school-diary-production.up.railway.app/api';
+  } catch {
+    return 'https://school-diary-production.up.railway.app/api';
+  }
+}
+
+const API_URL = detectApiUrl();
 const SIDEBAR_STATE_KEY = 'sidebarCollapsed';
 const SESSION_KEY = 'sd-session';
 const USER_ID_KEY = 'sd-user-id';
@@ -18,7 +34,6 @@ function setSession(data = {}) {
     userId: data.userId || data.user?.id || data.user?.userId || data.user?.uid || data.email || data.id || null,
     user: data.user || null,
   };
-  // Se não veio userId, cria um persistente
   if (!session.userId) {
     let uid = localStorage.getItem(USER_ID_KEY);
     if (!uid) {
@@ -51,6 +66,17 @@ function getOrCreateUserId() {
 }
 
 window.SessionManager = { getSession, setSession, clearSession, getOrCreateUserId };
+
+window.setApiUrl = function(url) {
+  if (typeof localStorage === 'undefined') return;
+  if (url && typeof url === 'string') {
+    localStorage.setItem('sd-api-url', url);
+  } else {
+    localStorage.removeItem('sd-api-url');
+  }
+  // Atualiza a página para usar a nova configuração
+  try { window.location.reload(); } catch {}
+}
 
 // Variáveis CSS
 function cssVar(name, fallback = '') {
