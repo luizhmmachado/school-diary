@@ -69,8 +69,76 @@
 .class-card header {
 	display: flex;
 	align-items: center;
+	justify-content: space-between;
 	gap: 10px;
 	font-weight: 700;
+}
+
+.class-card header span {
+	flex: 1;
+}
+
+.btn-delete {
+	width: 32px;
+	height: 32px;
+	padding: 6px;
+	border: 1px solid rgba(0, 0, 0, 0.1);
+	border-radius: 6px;
+	background: #fff;
+	cursor: pointer;
+	display: flex;
+	align-items: center;
+	justify-content: center;
+	transition: all 0.2s ease;
+}
+
+.btn-delete:hover {
+	background: #fee;
+	border-color: #f44;
+}
+
+.btn-delete img {
+	width: 16px;
+	height: 16px;
+	opacity: 0.6;
+}
+
+.btn-delete:hover img {
+	opacity: 1;
+}
+
+.confirm-modal {
+	width: 400px !important;
+	height: 250px !important;
+	padding: 16px;
+}
+
+.confirm-modal .modal-body {
+	flex: 1;
+	overflow: visible;
+	padding: 8px 0;
+}
+
+.confirm-modal .modal-body p {
+	margin: 0 0 8px;
+	font-size: 14px;
+}
+
+.confirm-modal .modal-actions {
+	display: flex;
+	gap: 16px;
+	margin-top: 0;
+}
+
+.confirm-modal .modal-actions .btn {
+	flex: 1;
+	margin: 0;
+}
+
+.confirm-modal .modal-actions .btn.primary {
+	background: var(--red-alert);
+	border-color: var(--red-alert);
+	color: #333;
 }
 
 .class-meta {
