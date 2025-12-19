@@ -1,5 +1,82 @@
-const API_URL = 'https://school-diary-production.up.railway.app/api';
+function detectApiUrl() {
+  try {
+    const w = typeof window !== 'undefined' ? window : {};
+    const fromWindow = w.API_URL || (w.ENV && w.ENV.API_URL);
+    const fromMeta = (typeof document !== 'undefined')
+      ? (document.querySelector('meta[name="api-url"]')?.content || null)
+      : null;
+    const fromStorage = (typeof localStorage !== 'undefined')
+      ? (localStorage.getItem('sd-api-url') || null)
+      : null;
+    return fromWindow || fromMeta || fromStorage || 'https://school-diary-production.up.railway.app/api';
+  } catch {
+    return 'https://school-diary-production.up.railway.app/api';
+  }
+}
+
+const API_URL = detectApiUrl();
 const SIDEBAR_STATE_KEY = 'sidebarCollapsed';
+const SESSION_KEY = 'sd-session';
+const USER_ID_KEY = 'sd-user-id';
+
+function readSession() {
+  try {
+    const raw = localStorage.getItem(SESSION_KEY);
+    return raw ? JSON.parse(raw) : null;
+  } catch (e) {
+    return null;
+  }
+}
+
+function setSession(data = {}) {
+  const session = {
+    token: data.token || data.accessToken || data.idToken || null,
+    userId: data.userId || data.user?.id || data.user?.userId || data.user?.uid || data.email || data.id || null,
+    user: data.user || null,
+  };
+  if (!session.userId) {
+    let uid = localStorage.getItem(USER_ID_KEY);
+    if (!uid) {
+      uid = `user-${Math.random().toString(16).slice(2)}`;
+      localStorage.setItem(USER_ID_KEY, uid);
+    }
+    session.userId = uid;
+  }
+  localStorage.setItem(SESSION_KEY, JSON.stringify(session));
+  return session;
+}
+
+function getSession() {
+  return readSession();
+}
+
+function clearSession() {
+  localStorage.removeItem(SESSION_KEY);
+}
+
+function getOrCreateUserId() {
+  const sess = readSession();
+  if (sess?.userId) return sess.userId;
+  let uid = localStorage.getItem(USER_ID_KEY);
+  if (!uid) {
+    uid = `user-${Math.random().toString(16).slice(2)}`;
+    localStorage.setItem(USER_ID_KEY, uid);
+  }
+  return uid;
+}
+
+window.SessionManager = { getSession, setSession, clearSession, getOrCreateUserId };
+
+window.setApiUrl = function(url) {
+  if (typeof localStorage === 'undefined') return;
+  if (url && typeof url === 'string') {
+    localStorage.setItem('sd-api-url', url);
+  } else {
+    localStorage.removeItem('sd-api-url');
+  }
+  // Atualiza a página para usar a nova configuração
+  try { window.location.reload(); } catch {}
+}
 
 // Variáveis CSS
 function cssVar(name, fallback = '') {
@@ -86,6 +163,14 @@ async function handleGoogleLogin(response) {
     const data = await result.json();
     
     if (data.success) {
+      if (window.SessionManager) {
+        window.SessionManager.setSession({
+          token: data.token || data.accessToken || credential,
+          userId: data.userId || data.user?.id || data.user?.userId,
+          user: data.user,
+          email: data.user?.email,
+        });
+      }
       window.location.href = '/dashboard/index.html';
     } else {
       alert('Erro ao fazer login: ' + data.message);

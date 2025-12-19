@@ -4,18 +4,16 @@
 
   const API_BASE = typeof API_URL !== 'undefined' ? API_URL : '/api';
   const API_EVENTS = `${API_BASE}/events`;
-  const USER_ID_KEY = 'sd-user-id';
-
-  function getUserId() {
-    let uid = localStorage.getItem(USER_ID_KEY);
-    if (!uid) {
-      uid = `user-${Math.random().toString(16).slice(2)}`;
-      localStorage.setItem(USER_ID_KEY, uid);
-    }
-    return uid;
-  }
-
-  const userId = getUserId();
+  const userId = (window.SessionManager && window.SessionManager.getOrCreateUserId())
+    || (() => {
+      const key = 'sd-user-id';
+      let uid = localStorage.getItem(key);
+      if (!uid) {
+        uid = `user-${Math.random().toString(16).slice(2)}`;
+        localStorage.setItem(key, uid);
+      }
+      return uid;
+    })();
 
   const state = {
     classes: [],
@@ -1156,6 +1154,7 @@
       }
       
       const payload = {
+        classId,
         name: fd.get('name'),
         weight: weightValue,
         grade: gradeValue,

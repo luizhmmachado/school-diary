@@ -2,8 +2,10 @@
   const weekContainer = document.getElementById('week-days');
   const monthContainer = document.getElementById('month-calendar');
   const monthLabel = document.getElementById('month-label');
+  const monthNav = document.querySelector('.month-nav');
   const pillsContainer = document.getElementById('month-pills');
   const eventsBody = document.querySelector('.events-body');
+  const pageTitle = document.querySelector('.page-title');
   if (!weekContainer || !monthContainer || !monthLabel) return;
 
   const API_BASE = typeof API_URL !== 'undefined' ? API_URL : '/api';
@@ -20,7 +22,8 @@
     return uid;
   }
 
-  const userId = getUserId();
+  const userId = (window.SessionManager && window.SessionManager.getOrCreateUserId())
+    || getUserId();
 
   const locale = 'pt-BR';
   const today = stripTime(new Date());
@@ -42,6 +45,8 @@
     const day = String(d.getDate()).padStart(2, '0');
     return `${d.getFullYear()}-${m}-${day}`;
   }
+
+  function capFirst(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
 
   async function apiCall(url, options = {}) {
     const res = await fetch(url, {
@@ -188,8 +193,15 @@
   function renderMonth() {
     const y = state.monthCursor.getFullYear();
     const m = state.monthCursor.getMonth();
-    const monthName = state.monthCursor.toLocaleDateString(locale, { month: 'long' });
-    monthLabel.textContent = monthName.charAt(0).toUpperCase() + monthName.slice(1);
+    const monthName = capFirst(state.monthCursor.toLocaleDateString(locale, { month: 'long' }));
+    const showYear = y !== state.today.getFullYear();
+    monthLabel.textContent = showYear ? `${monthName} - ${y}` : monthName;
+    if (monthNav) {
+      monthNav.classList.toggle('show-year', showYear);
+    }
+    if (pageTitle) {
+      pageTitle.textContent = showYear ? `Calendário - ${y}` : 'Calendário';
+    }
 
     const headers = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
     const frags = [];
@@ -230,8 +242,6 @@
       });
     });
   }
-
-  function capFirst(s) { return s.charAt(0).toUpperCase() + s.slice(1); }
   function renderMonthPills() {
     if (!pillsContainer) return;
     const y = state.monthCursor.getFullYear();
@@ -344,8 +354,24 @@
   function hookNav() {
     const byAction = (sel) => document.querySelector(`[data-action="${sel}"]`);
     const safe = (el, fn) => el && el.addEventListener('click', fn);
-    safe(byAction('prev-month'), () => { state.monthCursor.setMonth(state.monthCursor.getMonth() - 1); state.monthStripIndex = state.monthCursor.getMonth() < 6 ? 0 : 1; renderMonth(); renderMonthPills(); renderEvents(); });
-    safe(byAction('next-month'), () => { state.monthCursor.setMonth(state.monthCursor.getMonth() + 1); state.monthStripIndex = state.monthCursor.getMonth() < 6 ? 0 : 1; renderMonth(); renderMonthPills(); renderEvents(); });
+    safe(byAction('prev-month'), () => {
+      state.monthCursor.setMonth(state.monthCursor.getMonth() - 1);
+      state.selected = new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth(), 1);
+      state.monthStripIndex = state.monthCursor.getMonth() < 6 ? 0 : 1;
+      renderMonth();
+      renderWeek();
+      renderMonthPills();
+      renderEvents();
+    });
+    safe(byAction('next-month'), () => {
+      state.monthCursor.setMonth(state.monthCursor.getMonth() + 1);
+      state.selected = new Date(state.monthCursor.getFullYear(), state.monthCursor.getMonth(), 1);
+      state.monthStripIndex = state.monthCursor.getMonth() < 6 ? 0 : 1;
+      renderMonth();
+      renderWeek();
+      renderMonthPills();
+      renderEvents();
+    });
     safe(byAction('months-prev'), () => { state.monthStripIndex = 0; renderMonthPills(); });
     safe(byAction('months-next'), () => { state.monthStripIndex = 1; renderMonthPills(); });
 
