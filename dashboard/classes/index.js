@@ -212,8 +212,10 @@
       let classEvents = events.filter(e => e.classId === classId);
       
       classEvents.sort((a, b) => {
-        const dateA = a.date ? new Date(a.date) : new Date('2099-12-31');
-        const dateB = b.date ? new Date(b.date) : new Date('2099-12-31');
+        const dateA = new Date(a.date + 'T' + (a.time || '00:00'));
+        const dateB = new Date(b.date + 'T' + (b.time || '00:00'));
+        if (!a.date) return 1;
+        if (!b.date) return -1;
         return dateA - dateB;
       });
       
@@ -231,7 +233,7 @@
         const colorClass = `event-${color}`;
         eventEl.classList.add(colorClass);
         
-        const dateStr = event.date ? new Date(event.date).toLocaleDateString('pt-BR') : '';
+        const dateStr = event.date ? isoToLocalDate(event.date).toLocaleDateString('pt-BR') : '';
         const timeStr = event.time || '';
         
         eventEl.innerHTML = `
@@ -479,8 +481,10 @@
   function renderDraftEvents(container) {
     const list = Array.isArray(state.draftEvents) ? [...state.draftEvents] : [];
     list.sort((a, b) => {
-      const da = a.date ? new Date(a.date) : new Date('2099-12-31');
-      const db = b.date ? new Date(b.date) : new Date('2099-12-31');
+      const da = new Date(a.date + 'T' + (a.time || '00:00'));
+      const db = new Date(b.date + 'T' + (b.time || '00:00'));
+      if (!a.date) return 1;
+      if (!b.date) return -1;
       return da - db;
     });
     if (!list.length) {
@@ -493,7 +497,7 @@
       wrap.className = 'event-card';
       const color = event.color || 'red-alert';
       wrap.classList.add(`event-${color}`);
-      const dateStr = event.date ? new Date(event.date).toLocaleDateString('pt-BR') : '';
+      const dateStr = event.date ? isoToLocalDate(event.date).toLocaleDateString('pt-BR') : '';
       const timeStr = event.time || '';
       wrap.innerHTML = `
         <div class="event-header">
@@ -551,6 +555,7 @@
                 <button type="button" class="color-option" data-color="red-alert" style="background: var(--red-alert);" title="Vermelho" data-action="pick-color"></button>
                 <button type="button" class="color-option" data-color="blue-alert" style="background: var(--blue-alert);" title="Azul" data-action="pick-color"></button>
                 <button type="button" class="color-option" data-color="green-alert" style="background: var(--green-alert);" title="Verde" data-action="pick-color"></button>
+                <button type="button" class="color-option" data-color="yellow-alert" style="background: var(--yellow-alert);" title="Amarelo" data-action="pick-color"></button>
               </div>
             </div>
             <input name="color" type="hidden" value="red-alert">
@@ -891,6 +896,7 @@
                 <button type="button" class="color-option" data-color="red-alert" style="background: var(--red-alert);" title="Vermelho" data-action="pick-color"></button>
                 <button type="button" class="color-option" data-color="blue-alert" style="background: var(--blue-alert);" title="Azul" data-action="pick-color"></button>
                 <button type="button" class="color-option" data-color="green-alert" style="background: var(--green-alert);" title="Verde" data-action="pick-color"></button>
+                <button type="button" class="color-option" data-color="yellow-alert" style="background: var(--yellow-alert);" title="Amarelo" data-action="pick-color"></button>
               </div>
             </div>
             <input name="color" type="hidden" value="red-alert">

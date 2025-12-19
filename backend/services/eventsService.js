@@ -1,5 +1,5 @@
 const { v4: uuid } = require('uuid');
-const { PutCommand, QueryCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, QueryCommand, UpdateCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const { dynamo } = require('../config/dbClient');
 
 const TABLE = process.env.DYNAMODB_EVENTS_TABLE || 'school-diary-events';
@@ -38,6 +38,36 @@ async function createEvent(userId, payload) {
   return item;
 }
 
+async function updateEvent(userId, eventId, payload) {
+  const data = normalize(payload);
+  const params = {
+    TableName: TABLE,
+    Key: { userId, eventId },
+    UpdateExpression: 'SET #name = :name, classId = :classId, #weight = :weight, #grade = :grade, #date = :date, #time = :time, #color = :color, updatedAt = :updatedAt',
+    ExpressionAttributeNames: {
+      '#name': 'name',
+      '#weight': 'weight',
+      '#grade': 'grade',
+      '#date': 'date',
+      '#time': 'time',
+      '#color': 'color',
+    },
+    ExpressionAttributeValues: {
+      ':name': data.name,
+      ':classId': data.classId,
+      ':weight': data.weight,
+      ':grade': data.grade,
+      ':date': data.date,
+      ':time': data.time,
+      ':color': data.color,
+      ':updatedAt': now(),
+    },
+    ReturnValues: 'ALL_NEW',
+  };
+  const res = await dynamo.send(new UpdateCommand(params));
+  return res.Attributes;
+}
+
 async function listEventsByUser(userId) {
   const params = {
     TableName: TABLE,
@@ -59,6 +89,7 @@ async function deleteEvent(userId, eventId) {
 
 module.exports = {
   createEvent,
+  updateEvent,
   listEventsByUser,
   deleteEvent,
 };

@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createEvent, listEventsByUser, deleteEvent } = require('../services/eventsService');
+const { createEvent, updateEvent, listEventsByUser, deleteEvent } = require('../services/eventsService');
 
 function requireUser(req, res, next) {
   const userId = req.header('x-user-id');
@@ -26,6 +26,16 @@ router.post('/', requireUser, async (req, res) => {
   } catch (err) {
     console.error('Erro ao criar evento', err);
     res.status(500).json({ error: 'Erro ao criar evento' });
+  }
+});
+
+router.put('/:eventId', requireUser, async (req, res) => {
+  try {
+    const updated = await updateEvent(req.userId, req.params.eventId, req.body || {});
+    res.json(updated);
+  } catch (err) {
+    console.error('Erro ao atualizar evento', err);
+    res.status(500).json({ error: 'Erro ao atualizar evento' });
   }
 });
 
