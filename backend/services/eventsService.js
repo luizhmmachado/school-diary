@@ -47,7 +47,6 @@ async function listEventsByUser(userId) {
     },
   };
   const res = await dynamo.send(new QueryCommand(params));
-  console.log('Eventos retornados do DB:', JSON.stringify(res.Items, null, 2));
   return res.Items || [];
 }
 

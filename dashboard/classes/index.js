@@ -216,9 +216,9 @@
       
       // Ordenar por data (mais recente primeiro)
       classEvents.sort((a, b) => {
-        const dateA = a.date ? new Date(a.date) : new Date('1900-01-01');
-        const dateB = b.date ? new Date(b.date) : new Date('1900-01-01');
-        return dateB - dateA;
+        const dateA = a.date ? new Date(a.date) : new Date('2099-12-31');
+        const dateB = b.date ? new Date(b.date) : new Date('2099-12-31');
+        return dateA - dateB;
       });
       
       if (classEvents.length === 0) {
@@ -234,8 +234,6 @@
         const color = event.color || 'red-alert';
         const colorClass = `event-${color}`;
         eventEl.classList.add(colorClass);
-        
-        console.log('Evento:', event.name, 'Cor salva:', event.color, 'Classe CSS:', colorClass);
         
         const dateStr = event.date ? new Date(event.date).toLocaleDateString('pt-BR') : '';
         const timeStr = event.time || '';
@@ -699,6 +697,9 @@
       } catch (e) {}
       throw new Error(errorMsg);
     }
+    if (res.status === 204) {
+      return null;
+    }
     return res.json();
   }
 
@@ -860,18 +861,13 @@
         time: fd.get('time'),
         color: fd.get('color'),
       };
-      console.log('FormData completo:', {
-        name: fd.get('name'),
-        weight: fd.get('weight'),
-        grade: fd.get('grade'),
-        date: fd.get('date'),
-        time: fd.get('time'),
-        color: fd.get('color'),
-      });
-      console.log('Payload enviado:', payload);
       try {
         await apiEvents('', { method: 'POST', body: JSON.stringify(payload) });
         backdrop.remove();
+        const eventsListEl = document.querySelector('[data-role="events-list"]');
+        if (eventsListEl) {
+          await loadClassEvents(cls.classId, eventsListEl);
+        }
       } catch (err) {
         console.error('Erro ao criar evento', err);
         alert('Erro ao criar evento');
