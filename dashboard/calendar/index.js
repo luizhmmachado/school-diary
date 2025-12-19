@@ -115,13 +115,21 @@
           const className = cls?.name || 'Aula';
           const color = event.color || 'red-alert';
           const colorClass = `event-${color}`;
-          const gradeHtml = event.grade ? `<div class="event-pill"><img src="../../images/check.svg" alt="nota" class="pill-icon">${event.grade}</div>` : '';
+          
+          let gradeDisplay = '';
+          if (event.grade) {
+            const gradeNum = parseFloat(event.grade);
+            gradeDisplay = isNaN(gradeNum) ? event.grade : gradeNum.toFixed(1);
+          }
+          const gradeHtml = gradeDisplay ? `<div class="event-pill"><img src="../../images/check.svg" alt="nota" class="pill-icon">${gradeDisplay}</div>` : '';
+          const stopWords = ['e', 'de', 'da', 'do', 'das', 'dos', 'a', 'o', 'as', 'os'];
+          const words = String(className).split(' ').filter(w => w && !stopWords.includes(w.toLowerCase()));
+          const initials = words.slice(0, 2).map(w => w[0].toUpperCase()).join('');
+          
           return `
             <div class="event-item ${colorClass}">
               <div class="event-row-1">
-                <div class="event-bag-icon">
-                  <img src="../../images/bag.svg" alt="aula">
-                </div>
+                <div class="event-bag-icon">${initials || 'A'}</div>
                 <div class="event-title-time">
                   <div class="event-name">${event.name}</div>
                   ${event.time ? `<div class="event-time">${event.time}</div>` : ''}
@@ -279,6 +287,10 @@
       const className = cls?.name || 'Aula';
       const color = event.color || 'red-alert';
       
+      const stopWords = ['e', 'de', 'da', 'do', 'das', 'dos', 'a', 'o', 'as', 'os'];
+      const words = className.split(' ').filter(w => w.length > 0 && !stopWords.includes(w.toLowerCase()));
+      const initials = words.slice(0, 2).map(w => w[0].toUpperCase()).join('');
+      
       const eventDateTime = new Date(event.date + 'T' + (event.time || '00:00'));
       const diffMs = eventDateTime - now;
       const diffDays = Math.floor(diffMs / (1000 * 60 * 60 * 24));
@@ -304,13 +316,16 @@
       eventCard.className = `future-event-card event-${color}`;
       eventCard.innerHTML = `
         <div class="future-event-row-1">
-          <span class="future-event-name">${event.name}</span>
-          <span class="future-event-time-left">${timeLeftText}</span>
+          <div class="future-event-icon">${initials}</div>
+          <div class="future-event-info">
+            <div class="future-event-name-row">
+              <span class="future-event-name">${event.name}</span>
+              <span class="future-event-time-left">${timeLeftText}</span>
+            </div>
+            <span class="future-event-date">${eventDateFormatted}${eventTimeFormatted ? ' • ' + eventTimeFormatted : ''}</span>
+          </div>
         </div>
         <div class="future-event-row-2">
-          <span class="future-event-date">${eventDateFormatted}${eventTimeFormatted ? ' • ' + eventTimeFormatted : ''}</span>
-        </div>
-        <div class="future-event-row-3">
           <button type="button" class="future-event-more" data-event-id="${event.eventId}" title="Editar evento">
             <img src="../../images/more.svg" alt="Mais">
           </button>
@@ -346,6 +361,10 @@
     modal.className = 'modal event-options-modal';
     const cls = state.classes.get(event.classId);
     const className = cls?.name || 'Aula';
+    const gradeDisplay = event.grade != null && event.grade !== '' ? Number(String(event.grade).replace(',', '.')) : null;
+    const weightDisplay = event.weight != null && event.weight !== '' ? Number(String(event.weight).replace(',', '.')) : null;
+    const gradeText = gradeDisplay != null && !Number.isNaN(gradeDisplay) ? gradeDisplay.toFixed(1) : '';
+    const weightText = weightDisplay != null && !Number.isNaN(weightDisplay) ? weightDisplay.toFixed(1) : '';
     
     modal.innerHTML = `
       <h3>${event.name}</h3>
@@ -353,8 +372,8 @@
         <p><strong>Aula:</strong> ${className}</p>
         <p><strong>Data:</strong> ${event.date ? new Date(event.date).toLocaleDateString('pt-BR') : '-'}</p>
         <p><strong>Horário:</strong> ${event.time || '-'}</p>
-        ${event.grade ? `<p><strong>Nota:</strong> ${event.grade}</p>` : ''}
-        ${event.weight ? `<p><strong>Peso:</strong> ${event.weight}</p>` : ''}
+        ${gradeText ? `<p><strong>Nota:</strong> ${gradeText}</p>` : ''}
+        ${weightText ? `<p><strong>Peso:</strong> ${weightText}</p>` : ''}
       </div>
       <div class="modal-actions">
         <button type="button" class="btn ghost" data-action="cancel">Fechar</button>
@@ -399,6 +418,9 @@
     backdrop.className = 'modal-backdrop';
     const modal = document.createElement('div');
     modal.className = 'modal event-modal';
+  
+      const weightDisplay = event.weight ? parseFloat(event.weight).toFixed(1) : '';
+      const gradeDisplay = event.grade ? parseFloat(event.grade).toFixed(1) : '';
     const cls = state.classes.get(event.classId);
     const className = cls?.name || 'Aula';
     
@@ -413,11 +435,11 @@
             </div>
             <div class="field">
               <label>Peso da nota</label>
-              <input name="weight" type="number" step="0.01" min="0" value="${event.weight || ''}">
+              <input name="weight" type="number" step="0.1" min="0" value="${weightDisplay}">
             </div>
             <div class="field">
               <label>Nota obtida</label>
-              <input name="grade" type="number" step="0.01" min="0" value="${event.grade || ''}">
+              <input name="grade" type="number" step="0.1" min="0" value="${gradeDisplay}">
             </div>
             <div class="field">
               <label>Data</label>
@@ -475,11 +497,34 @@
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
       const fd = new FormData(form);
+      
+      let weightValue = fd.get('weight');
+      if (weightValue && weightValue.trim() !== '') {
+        weightValue = weightValue.replace(',', '.');
+        const weightNumber = parseFloat(weightValue);
+        if (!isNaN(weightNumber)) {
+          weightValue = weightNumber.toFixed(1);
+        }
+      } else {
+        weightValue = null;
+      }
+      
+      let gradeValue = fd.get('grade');
+      if (gradeValue && gradeValue.trim() !== '') {
+        gradeValue = gradeValue.replace(',', '.');
+        const gradeNumber = parseFloat(gradeValue);
+        if (!isNaN(gradeNumber)) {
+          gradeValue = gradeNumber.toFixed(1);
+        }
+      } else {
+        gradeValue = null;
+      }
+      
       const payload = {
         classId: event.classId,
         name: fd.get('name'),
-        weight: fd.get('weight'),
-        grade: fd.get('grade'),
+        weight: weightValue,
+        grade: gradeValue,
         date: fd.get('date'),
         time: fd.get('time'),
         color: fd.get('color'),
