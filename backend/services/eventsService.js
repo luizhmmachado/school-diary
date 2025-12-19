@@ -1,5 +1,5 @@
 const { v4: uuid } = require('uuid');
-const { PutCommand, QueryCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, QueryCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const { dynamo } = require('../config/dbClient');
 
 const TABLE = process.env.DYNAMODB_EVENTS_TABLE || 'school-diary-events';
@@ -15,6 +15,7 @@ function normalize(payload = {}) {
     grade: payload.grade !== undefined && payload.grade !== '' ? Number(payload.grade) : null,
     date: payload.date || '',
     time: payload.time || '',
+    color: payload.color || 'red-alert',
     classId: payload.classId || '',
   };
 }
@@ -30,6 +31,7 @@ async function createEvent(userId, payload) {
     grade: data.grade,
     date: data.date,
     time: data.time,
+    color: data.color,
     createdAt: now(),
   };
   await dynamo.send(new PutCommand({ TableName: TABLE, Item: item }));
@@ -45,10 +47,19 @@ async function listEventsByUser(userId) {
     },
   };
   const res = await dynamo.send(new QueryCommand(params));
+  console.log('Eventos retornados do DB:', JSON.stringify(res.Items, null, 2));
   return res.Items || [];
+}
+
+async function deleteEvent(userId, eventId) {
+  await dynamo.send(new DeleteCommand({
+    TableName: TABLE,
+    Key: { userId, eventId },
+  }));
 }
 
 module.exports = {
   createEvent,
   listEventsByUser,
+  deleteEvent,
 };

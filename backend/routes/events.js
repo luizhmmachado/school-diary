@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { createEvent, listEventsByUser } = require('../services/eventsService');
+const { createEvent, listEventsByUser, deleteEvent } = require('../services/eventsService');
 
 function requireUser(req, res, next) {
   const userId = req.header('x-user-id');
@@ -26,6 +26,16 @@ router.post('/', requireUser, async (req, res) => {
   } catch (err) {
     console.error('Erro ao criar evento', err);
     res.status(500).json({ error: 'Erro ao criar evento' });
+  }
+});
+
+router.delete('/:eventId', requireUser, async (req, res) => {
+  try {
+    await deleteEvent(req.userId, req.params.eventId);
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao deletar evento', err);
+    res.status(500).json({ error: 'Erro ao deletar evento' });
   }
 });
 

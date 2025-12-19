@@ -28,6 +28,15 @@
 
   const WEEKDAYS = ['Dom', 'Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb'];
 
+  function isoToLocalDate(iso) {
+    const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso || '');
+    if (!m) return new Date(NaN);
+    const y = Number(m[1]);
+    const mo = Number(m[2]);
+    const d = Number(m[3]);
+    return new Date(y, mo - 1, d);
+  }
+
   function presencePercent(cls) {
     const total = Number(cls.totalClasses) || 0;
     const abs = Number(cls.absences) || 0;
@@ -42,7 +51,10 @@
     wrap.className = 'empty-state';
     const btn = document.createElement('button');
     btn.className = 'add-class-button';
-    btn.textContent = 'Adicionar Aula';
+    btn.innerHTML = `
+      <img src="../../images/plus.svg" alt="Adicionar" />
+      <span>Adicionar Aula</span>
+    `;
     btn.addEventListener('click', () => openModal());
     wrap.appendChild(btn);
     root.appendChild(wrap);
@@ -102,9 +114,52 @@
       meta.className = 'class-meta';
       const days = (cls.days || []).join(', ');
       const presence = presencePercent(cls);
+
+      // Compute start/end dates from scheduleByDay (ISO dates)
+      let startDate = '';
+      let endDate = '';
+      if (Array.isArray(cls.scheduleByDay) && cls.scheduleByDay.length) {
+        startDate = cls.scheduleByDay.reduce((acc, s) => (!acc || s.date < acc ? s.date : acc), '');
+        endDate = cls.scheduleByDay.reduce((acc, s) => (!acc || s.date > acc ? s.date : acc), '');
+      }
+
+      // Group time ranges by weekday and render lines per day
+      let timesHtml = '-';
+      if (Array.isArray(cls.scheduleByDay) && cls.scheduleByDay.length) {
+        const grouped = new Map(); // Map<weekdayIndex, Array<string>>
+        cls.scheduleByDay.forEach((s) => {
+          const d = isoToLocalDate(s.date);
+          if (isNaN(d)) return;
+          const dow = d.getDay();
+          const slots = Array.isArray(s.slots) && s.slots.length ? s.slots : [{ start: s.start, end: s.end }];
+          slots.forEach((sl) => {
+            const a = sl?.start || '';
+            const b = sl?.end || '';
+            if (!(a || b)) return;
+            const range = `${a || '--:--'}-${b || '--:--'}`;
+            if (!grouped.has(dow)) grouped.set(dow, []);
+            const arr = grouped.get(dow);
+            if (!arr.includes(range)) arr.push(range); // dedupe per weekday
+          });
+        });
+        const order = [0,1,2,3,4,5,6];
+        const rows = [];
+        order.forEach((dow) => {
+          const list = grouped.get(dow);
+          if (!list || !list.length) return;
+          list.forEach((t, i) => {
+            const dayLabel = i === 0 ? WEEKDAYS[dow] : '';
+            rows.push(`<div class="times-row"><div class="wday">${dayLabel}</div><div class="time">${t}</div></div>`);
+          });
+        });
+        timesHtml = rows.length ? `<div class="times-list">${rows.join('')}</div>` : '-';
+      }
+
       meta.innerHTML = `
         <div><div class="label">Dias</div><div>${days || '-'}</div></div>
-        <div><div class="label">Horários</div><div>${formatSchedule(cls) || '-'}</div></div>
+        <div class="horarios-cell"><div class="label">Horários</div>${timesHtml}</div>
+        <div><div class="label">Data início</div><div>${startDate || '-'}</div></div>
+        <div><div class="label">Data fim</div><div>${endDate || '-'}</div></div>
         <div><div class="label">Nota média</div><div>${cls.averageGrade ?? '-'}</div></div>
         <div><div class="label">Presença</div><div class="presence">${presence}%</div></div>
       `;
@@ -128,6 +183,16 @@
       grid.appendChild(card);
     });
 
+    // Add tile: shows after existing cards and follows the grid placement rules
+    const addTile = document.createElement('button');
+    addTile.className = 'add-class-button';
+    addTile.innerHTML = `
+      <img src="../../images/plus.svg" alt="Adicionar" />
+      <span>Adicionar Aula</span>
+    `;
+    addTile.addEventListener('click', () => openModal());
+    grid.appendChild(addTile);
+
     root.appendChild(grid);
   }
 
@@ -144,6 +209,69 @@
     if (m) m.remove();
   }
 
+  async function loadClassEvents(classId, container) {
+    try {
+      const events = await apiEvents('', { method: 'GET' });
+      let classEvents = events.filter(e => e.classId === classId);
+      
+      // Ordenar por data (mais recente primeiro)
+      classEvents.sort((a, b) => {
+        const dateA = a.date ? new Date(a.date) : new Date('1900-01-01');
+        const dateB = b.date ? new Date(b.date) : new Date('1900-01-01');
+        return dateB - dateA;
+      });
+      
+      if (classEvents.length === 0) {
+        container.innerHTML = '<p class="hint">Nenhum evento cadastrado</p>';
+        return;
+      }
+
+      container.innerHTML = '';
+      classEvents.forEach(event => {
+        const eventEl = document.createElement('div');
+        eventEl.className = 'event-card';
+        
+        const color = event.color || 'red-alert';
+        const colorClass = `event-${color}`;
+        eventEl.classList.add(colorClass);
+        
+        console.log('Evento:', event.name, 'Cor salva:', event.color, 'Classe CSS:', colorClass);
+        
+        const dateStr = event.date ? new Date(event.date).toLocaleDateString('pt-BR') : '';
+        const timeStr = event.time || '';
+        
+        eventEl.innerHTML = `
+          <div class="event-header">
+            <div class="event-name">${event.name}</div>
+            <button type="button" class="btn-delete-event" data-event-id="${event.eventId}" title="Remover evento">×</button>
+          </div>
+          <div class="event-meta">
+            ${dateStr ? `<div class="event-date"><img src="../../images/calendar.svg" alt="data" class="event-icon"> ${dateStr}</div>` : ''}
+            ${timeStr ? `<div class="event-time"><img src="../../images/clock.svg" alt="horário" class="event-icon"> ${timeStr}</div>` : ''}
+          </div>
+        `;
+        
+        const deleteBtn = eventEl.querySelector('.btn-delete-event');
+        deleteBtn.addEventListener('click', async () => {
+          if (confirm(`Deseja remover o evento "${event.name}"?`)) {
+            try {
+              await apiEvents(`/${event.eventId}`, { method: 'DELETE' });
+              loadClassEvents(classId, container);
+            } catch (err) {
+              console.error('Erro ao deletar evento', err);
+              alert('Erro ao deletar evento');
+            }
+          }
+        });
+        
+        container.appendChild(eventEl);
+      });
+    } catch (err) {
+      console.error('Erro ao carregar eventos', err);
+      container.innerHTML = '<p class="hint error">Erro ao carregar eventos</p>';
+    }
+  }
+
   function openModal(cls = null) {
     state.editing = cls;
     state.weekdays = new Set();
@@ -154,12 +282,22 @@
       const sorted = [...cls.scheduleByDay].sort((a, b) => a.date.localeCompare(b.date));
       state.startDate = sorted[0].date;
       state.endDate = sorted[sorted.length - 1].date;
+      const tmp = new Map(); // Map<dow, Array<{start,end}>>
       sorted.forEach(s => {
-        const d = new Date(s.date);
+        const d = isoToLocalDate(s.date);
         const dow = d.getDay();
         state.weekdays.add(dow);
-          state.weekdaySlots.set(dow, s.slots && Array.isArray(s.slots) && s.slots.length ? s.slots : [{ start: s.start, end: s.end }]);
+        const slots = Array.isArray(s.slots) && s.slots.length ? s.slots : [{ start: s.start, end: s.end }];
+        const arr = tmp.get(dow) || [];
+        slots.forEach(sl => {
+          const a = sl?.start || '';
+          const b = sl?.end || '';
+          const key = `${a}|${b}`;
+          if (!arr.some(x => `${x.start||''}|${x.end||''}` === key)) arr.push({ start: a, end: b });
+        });
+        tmp.set(dow, arr);
       });
+      tmp.forEach((arr, dow) => state.weekdaySlots.set(dow, arr));
     } else if (cls?.days) {
       cls.days.forEach(label => {
         const idx = WEEKDAYS.indexOf(label);
@@ -222,9 +360,10 @@
             <div class="form-grid full">
               <div class="field">
                 <label>Eventos / provas</label>
+                <div class="events-list" data-role="events-list"></div>
                 <p class="hint">Cadastre eventos no botão abaixo.</p>
                 <button type="button" class="btn" data-action="add-event" ${cls ? '' : 'disabled'}>Adicionar evento</button>
-                ${cls ? '' : '<p class="hint">Salve a aula antes de adicionar eventos.</p>'}
+                ${cls ? '' : '<p class="hint">Salve a aula antes de adicionar eventos.</p'}
               </div>
             </div>
             <div class="modal-actions">
@@ -250,6 +389,12 @@
     const endInput = modal.querySelector('[data-action="pick-end"]');
     const addEventBtn = modal.querySelector('[data-action="add-event"]');
     const presenceModeSelect = modal.querySelector('[data-role="presence-mode"]');
+    const eventsListEl = modal.querySelector('[data-role="events-list"]');
+
+    // Load and render events for this class
+    if (cls && eventsListEl) {
+      loadClassEvents(cls.classId, eventsListEl);
+    }
     const maxAbsField = modal.querySelector('[data-role="maxAbsences-field"]');
     const minPresField = modal.querySelector('[data-role="minPresence-field"]');
 
@@ -317,7 +462,12 @@
   function formatSchedule(cls) {
     if (cls.scheduleByDay && Array.isArray(cls.scheduleByDay) && cls.scheduleByDay.length) {
       return cls.scheduleByDay
-        .map(s => `${s.date}${s.start || s.end ? ` (${s.start || '--:--'}-${s.end || '--:--'})` : ''}`)
+        .map(s => {
+          const slots = Array.isArray(s.slots) && s.slots.length ? s.slots : [{ start: s.start, end: s.end }];
+          const hasAnyTime = slots.some(sl => (sl.start && sl.start.length) || (sl.end && sl.end.length));
+          const times = slots.map(sl => `${sl.start || '--:--'}-${sl.end || '--:--'}`).join('; ');
+          return `${s.date}${hasAnyTime ? ` (${times})` : ''}`;
+        })
         .join(', ');
     }
     return cls.schedule || '';
@@ -358,6 +508,7 @@
           <div class="slot-date">${WEEKDAYS[idx]} ${daySlots.length > 1 ? `#${slotIdx + 1}` : ''}</div>
           <input type="time" value="${slot.start || ''}" data-idx="${idx}" data-slot="${slotIdx}" data-field="start">
           <input type="time" value="${slot.end || ''}" data-idx="${idx}" data-slot="${slotIdx}" data-field="end">
+          <button type="button" class="btn ghost remove-slot" data-action="remove-slot" data-idx="${idx}" data-slot="${slotIdx}" title="Remover horário">×</button>
         `;
         slotsWrap.appendChild(row);
       });
@@ -385,6 +536,26 @@
         const arr = Array.isArray(cur) ? cur : [cur];
         arr[slotIdx] = { ...arr[slotIdx], [field]: e.target.value };
         state.weekdaySlots.set(idx, arr);
+        renderDaySummary(summaryEl);
+      });
+    });
+
+    container.querySelectorAll('[data-action="remove-slot"]').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const idx = Number(e.currentTarget.dataset.idx);
+        const slotIdx = Number(e.currentTarget.dataset.slot);
+        const cur = state.weekdaySlots.get(idx) || [];
+        const arr = Array.isArray(cur) ? [...cur] : [cur];
+        if (slotIdx >= 0 && slotIdx < arr.length) {
+          arr.splice(slotIdx, 1);
+        }
+        if (arr.length === 0) {
+          state.weekdays.delete(idx);
+          state.weekdaySlots.delete(idx);
+        } else {
+          state.weekdaySlots.set(idx, arr);
+        }
+        renderWeekdayPills(container, summaryEl);
         renderDaySummary(summaryEl);
       });
     });
@@ -435,7 +606,7 @@
       }
       for (let d = 1; d <= last.getDate(); d++) {
         const date = new Date(y, m, d);
-        const iso = date.toISOString().slice(0, 10);
+        const iso = `${y}-${String(m + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`;
         const btn = document.createElement('button');
         btn.className = 'day-btn';
         btn.textContent = String(d);
@@ -473,8 +644,8 @@
   }
 
   function buildScheduleRange() {
-    const start = new Date(state.startDate);
-    const end = new Date(state.endDate);
+    const start = isoToLocalDate(state.startDate);
+    const end = isoToLocalDate(state.endDate);
     if (isNaN(start) || isNaN(end) || end < start) return [];
     const res = [];
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
@@ -483,7 +654,8 @@
         const raw = state.weekdaySlots.get(dow);
         const slots = Array.isArray(raw) ? raw : raw ? [raw] : [{ start: '', end: '' }];
         const iso = d.toISOString().slice(0, 10);
-        res.push({ date: iso, start: slots[0]?.start || '', end: slots[0]?.end || '', slots: slots.map(s => ({ start: s.start || '', end: s.end || '' })) });
+        const dateStr = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, '0')}-${String(d.getDate()).padStart(2, '0')}`;
+        res.push({ date: dateStr, start: slots[0]?.start || '', end: slots[0]?.end || '', slots: slots.map(s => ({ start: s.start || '', end: s.end || '' })) });
       }
     }
     return res;
@@ -506,6 +678,7 @@
       } catch (e) {}
       throw new Error(errorMsg);
     }
+    if (res.status === 204) return null;
     return res.json();
   }
 
@@ -610,7 +783,7 @@
     const backdrop = document.createElement('div');
     backdrop.className = 'modal-backdrop';
     const modal = document.createElement('div');
-    modal.className = 'modal';
+     modal.className = 'modal event-modal';
     modal.innerHTML = `
       <h3>Novo evento para ${cls.name || 'Aula'}</h3>
       <div class="modal-body">
@@ -636,6 +809,15 @@
               <label>Horário</label>
               <input name="time" type="time">
             </div>
+            <div class="field">
+              <label>Cor do evento</label>
+              <div class="color-picker">
+                <button type="button" class="color-option" data-color="red-alert" style="background: var(--red-alert);" title="Vermelho" data-action="pick-color"></button>
+                <button type="button" class="color-option" data-color="blue-alert" style="background: var(--blue-alert);" title="Azul" data-action="pick-color"></button>
+                <button type="button" class="color-option" data-color="green-alert" style="background: var(--green-alert);" title="Verde" data-action="pick-color"></button>
+              </div>
+            </div>
+            <input name="color" type="hidden" value="red-alert">
           </div>
           <div class="modal-actions">
             <button type="button" class="btn ghost" data-action="cancel">Cancelar</button>
@@ -651,6 +833,20 @@
     backdrop.addEventListener('click', (e) => { if (e.target === backdrop) backdrop.remove(); });
     const form = modal.querySelector('#event-form');
     const cancel = modal.querySelector('[data-action="cancel"]');
+    const colorInput = modal.querySelector('input[name="color"]');
+    const colorOptions = modal.querySelectorAll('[data-action="pick-color"]');
+
+    colorOptions.forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        e.preventDefault();
+        const color = e.currentTarget.dataset.color;
+        colorInput.value = color;
+        colorOptions.forEach(b => b.style.border = '');
+        e.currentTarget.style.border = '2px solid #111';
+      });
+    });
+    colorOptions[0].style.border = '2px solid #111';
+
     cancel.addEventListener('click', () => backdrop.remove());
     form.addEventListener('submit', async (e) => {
       e.preventDefault();
@@ -662,7 +858,17 @@
         grade: fd.get('grade'),
         date: fd.get('date'),
         time: fd.get('time'),
+        color: fd.get('color'),
       };
+      console.log('FormData completo:', {
+        name: fd.get('name'),
+        weight: fd.get('weight'),
+        grade: fd.get('grade'),
+        date: fd.get('date'),
+        time: fd.get('time'),
+        color: fd.get('color'),
+      });
+      console.log('Payload enviado:', payload);
       try {
         await apiEvents('', { method: 'POST', body: JSON.stringify(payload) });
         backdrop.remove();
