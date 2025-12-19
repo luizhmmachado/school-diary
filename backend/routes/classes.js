@@ -1,6 +1,6 @@
 const express = require('express');
 const router = express.Router();
-const { listClasses, createClass, updateClass } = require('../services/classesService');
+const { listClasses, createClass, updateClass, deleteClass } = require('../services/classesService');
 
 function requireUser(req, res, next) {
   const userId = req.header('x-user-id');
@@ -36,6 +36,16 @@ router.put('/:classId', requireUser, async (req, res) => {
   } catch (err) {
     console.error('Erro ao atualizar aula', err);
     res.status(500).json({ error: 'Erro ao atualizar aula' });
+  }
+});
+
+router.delete('/:classId', requireUser, async (req, res) => {
+  try {
+    await deleteClass(req.userId, req.params.classId);
+    res.status(204).send();
+  } catch (err) {
+    console.error('Erro ao remover aula', err);
+    res.status(500).json({ error: 'Erro ao remover aula' });
   }
 });
 

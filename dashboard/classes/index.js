@@ -85,7 +85,17 @@
       card.className = 'class-card';
 
       const header = document.createElement('header');
-      header.innerHTML = `<span>${cls.name || 'Sem título'}</span>`;
+      header.innerHTML = `
+        <span>${cls.name || 'Sem título'}</span>
+        <button class="btn-delete" data-action="delete" title="Remover aula">
+          <img src="../../images/trash.svg" alt="Remover" />
+        </button>
+      `;
+      const deleteBtn = header.querySelector('[data-action="delete"]');
+      deleteBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        confirmDelete(cls);
+      });
       card.appendChild(header);
 
       const meta = document.createElement('div');
@@ -548,6 +558,52 @@
       console.error('Erro ao adicionar falta', err);
       alert('Erro ao adicionar falta');
     }
+  }
+
+  function confirmDelete(cls) {
+    const backdrop = document.createElement('div');
+    backdrop.className = 'modal-backdrop';
+    const modal = document.createElement('div');
+    modal.className = 'modal confirm-modal';
+    modal.innerHTML = `
+      <h3>Confirmar exclusão</h3>
+      <div class="modal-body">
+        <p>Tem certeza que deseja remover a aula <strong>${cls.name || 'Sem título'}</strong>?</p>
+        <p class="hint">Esta ação não pode ser desfeita.</p>
+      </div>
+      <div class="modal-actions">
+        <button type="button" class="btn ghost" data-action="cancel">Cancelar</button>
+        <button type="button" class="btn primary" data-action="confirm">Remover</button>
+      </div>
+    `;
+
+    backdrop.appendChild(modal);
+    document.body.appendChild(backdrop);
+
+    backdrop.addEventListener('click', (e) => {
+      if (e.target === backdrop) backdrop.remove();
+    });
+
+    const cancel = modal.querySelector('[data-action="cancel"]');
+    const confirm = modal.querySelector('[data-action="confirm"]');
+
+    cancel.addEventListener('click', () => backdrop.remove());
+    confirm.addEventListener('click', async () => {
+      try {
+        await deleteClass(cls.classId);
+        backdrop.remove();
+        await loadClasses();
+      } catch (err) {
+        console.error('Erro ao remover aula', err);
+        alert('Erro ao remover aula');
+      }
+    });
+  }
+
+  async function deleteClass(classId) {
+    return api(`/${classId}`, {
+      method: 'DELETE',
+    });
   }
 
   function openEventModal(cls) {

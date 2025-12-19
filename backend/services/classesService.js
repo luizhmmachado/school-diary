@@ -1,5 +1,5 @@
 const { v4: uuid } = require('uuid');
-const { PutCommand, QueryCommand, UpdateCommand } = require('@aws-sdk/lib-dynamodb');
+const { PutCommand, QueryCommand, UpdateCommand, DeleteCommand } = require('@aws-sdk/lib-dynamodb');
 const { dynamo } = require('../config/dbClient');
 
 const TABLE = process.env.DYNAMODB_CLASSES_TABLE || 'school-diary-classes';
@@ -103,8 +103,18 @@ async function updateClass(userId, classId, payload) {
   return res.Attributes;
 }
 
+async function deleteClass(userId, classId) {
+  const params = {
+    TableName: TABLE,
+    Key: { userId, classId },
+  };
+  await dynamo.send(new DeleteCommand(params));
+  return { success: true };
+}
+
 module.exports = {
   listClasses,
   createClass,
   updateClass,
+  deleteClass,
 };
